@@ -37,11 +37,13 @@ Training the model in Python isn't required to export it and train it in JavaScr
 We're going to create an ONNX graph that can compute gradients when given training data.
 
 1. Install some dependencies
-<!-- TODO Confirm link. -->
-PyTorch: see [pytorch.org](https://pytorch.org) for how to install it on your system.
+
+*I did this in WSL (Windows Subsystem for Linux).*
+
+PyTorch: see [pytorch.org](https://pytorch.org/get-started/locally/) for how to install it on your system.
 
 onnxruntime: At this time (March 2022), the utility method to export the gradient graph hasn't been released yet.
-It should be in version 1.11 (TODO verify).
+It should be in version v1.11.
 Once it's released, you can do `pip install onnxruntime` (see [onnxruntime.ai](https://onnxruntime.ai) for other options).
 
 Until then, you'll need to build onnxruntime yourself.
@@ -62,6 +64,7 @@ export LD_LIBRARY_PATH="./build/Linux/Release:${LD_LIBRARY_PATH}"
 
 2. Export the model
 ```python
+import torch
 from onnxruntime.training.experimental import export_gradient_graph
 
 # We need a custom loss function to load the graph in an InferenceSession in ONNX Runtime Web.
@@ -94,7 +97,7 @@ You now have an ONNX graph at `gradient_graph.onnx`.
 If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/commits/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples on how you can validate the file.
 
 ## 2. Load the model in JavaScript
-We'll use [ONNX Runtime Web](TODO) to load the gradient graph.
+We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
 At this time (March 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled.
 The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad`.
