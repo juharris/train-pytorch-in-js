@@ -103,9 +103,12 @@ At this time (March 2022), this only works with custom ONNX Runtine Web builds w
 The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad`.
 
 1. Build ONNX Runtime Web with training operators enabled.
-   1. TODO
+   1. TODO Explain steps.
 
 2. Setup the example project.
+
+   TODO Make the example project.
+
    1. Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `onnxruntime_web_build_inference_with_training_ops/`.
    2. `cd training`
    3. `npm install`
