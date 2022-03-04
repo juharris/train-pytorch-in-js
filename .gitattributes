@@ -1,0 +1,13 @@
+.gitattributes text eol=lf
+.gitignore text eol=lf
+
+# Scripts
+*.bash     text eol=lf
+*.sh       text eol=lf
+
+# Graphics
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.svg      binary
