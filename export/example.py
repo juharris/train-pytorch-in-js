@@ -45,8 +45,13 @@ example_input = torch.randn(
     batch_size, input_size, requires_grad=True)
 example_labels = torch.tensor([1])
 
+print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(
     model, loss_fn, example_input, example_labels, gradient_graph_path)
+print(f"Done writing gradient graph to \"{gradient_graph_path}\".")
 
+print("Checking gradient graph...")
 onnx_model = onnx.load(gradient_graph_path)
 onnx.checker.check_model(onnx_model)
+print("Gradient graph should be okay.")
+print("Done.")

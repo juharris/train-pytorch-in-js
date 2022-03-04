@@ -54,12 +54,12 @@ conda activate ort-dev
 conda install -c anaconda libstdcxx-ng
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
 pip install flake8 pytest
-git clone git@github.com:microsoft/onnxruntime.git --recursive TODO recurse submodules
+git clone --recursive git@github.com:microsoft/onnxruntime.git
 cd onnxruntime
 pip install -r requirements-dev.txt
 ./build.sh --config Release --build_shared_lib --parallel $(expr `nproc` - 1) --enable_training --enable_pybind --build_wheel --skip_submodule_sync --skip_tests
 
-export LD_LIBRARY_PATH="./build/Linux/Release:${LD_LIBRARY_PATH}"
+export PYTHONPATH="${PWD}/build/Linux/Release:${PYTHONPATH}"
 ```
 
 2. Export the model
