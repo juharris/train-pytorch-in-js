@@ -96,14 +96,22 @@ export_gradient_graph(
 You now have an ONNX graph at `gradient_graph.onnx`.
 If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/commits/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples on how you can validate the file.
 
+3. TODO Explain how to set up the optimizer in its own graph.
+See https://github.com/microsoft/onnxruntime/commit/e70ae3303dc57096d1b1ee51483e8789cad51941 
+
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
 At this time (March 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled.
-The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad`.
+The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
-1. Build ONNX Runtime Web with training operators enabled.
-   1. TODO Explain steps.
+1. Build ONNX Runtime Web with training operators enabled.\
+See the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
+When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
+For example:
+```bash
+./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training_ops --skip_submodule_sync
+```
 
 2. Setup the example project.
 
