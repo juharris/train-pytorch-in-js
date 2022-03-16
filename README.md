@@ -110,7 +110,7 @@ See the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxrunt
 When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
 For example:
 ```bash
-./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training_ops --skip_submodule_sync
+./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
 ```
 
 2. Setup the example project.
