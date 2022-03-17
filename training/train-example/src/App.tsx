@@ -1,101 +1,91 @@
 import React from 'react'
-import logo from './logo.svg'
 import './App.css'
 
-// @ts-ignore
-import ort from '../public/onnxruntime_web_build_inference_with_training_ops/ort.js'
+// We load ONNX Runtime Web using a script tag in index.html.
+declare const ort: any
 
 function App() {
+	const [messages, setMessages] = React.useState<string[]>([])
+	const [statusMessage, setStatusMessage] = React.useState("")
+	const [errorMessage, setErrorMessage] = React.useState("")
 
-  const [message, setMessage] = React.useState("")
-  const [errorMessage, setErrorMessage] = React.useState("")
+	function randomTensor(shape: number[]) {
+		const values = new Float32Array(shape.reduce((a, b) => a * b))
+		for (let i = 0; i < values.length; ++i) {
+			values[i] = Math.random()
+		}
+		return new ort.Tensor('float32', values, shape)
+	}
 
-  function randomTensor(shape: number[]): ort.Tensor {
-    const values = new Float32Array(shape.reduce((a, b) => a * b))
-    for (let i = 0; i < values.length; ++i) {
-      values[i] = Math.random()
-    }
-    return new ort.Tensor('float32', values, shape)
-  }
+	function showStatusMessage(message: string) {
+		console.log(message)
+		setStatusMessage(message)
+	}
 
-  async function loadOnnxModel() {
-    // const url = '/models/example_ort_model.onnx'
-    // const url = '/models/model_with_gradient_graph.onnx'
-    // const url = '/models/model_with_training_graph.onnx'
-    const url = '/models/gradient_graph_model.onnx'
-    showMessage(`Loading ONNX model at "${url}".`)
-    let session
-    try {
-      session = await ort.InferenceSession.create(url)
-      console.log("Loaded the model. session:", session)
-      showMessage("Loaded the model.")
-    } catch (err) {
-      showErrorMessage("Error loading the model: " + err)
-      console.error("Error loading the model", err)
-      return
-    }
+	function addMessage(message: string) {
+		console.log(message)
+		console.debug("messages:", messages)
+		setMessages([...messages, message])
+	}
 
-    // Set up some sample data to try with our model.
-    const x = Float32Array.from(Array.from(Array(10)).map(Math.random))
-    const label = BigInt64Array.from([1n])
-    const batchSize = 1
-    const xTensor = new ort.Tensor('float32', x, [batchSize, x.length])
-    const labelTensor = new ort.Tensor('int64', label, [batchSize])
+	function showErrorMessage(message: string) {
+		console.error(message)
+		setErrorMessage(message)
+	}
 
-    const feeds = {
-      input: xTensor,
-      labels: labelTensor,
-      'fc1.weight': randomTensor([5, 10]),
-      'fc1.bias': randomTensor([5]),
-      'fc2.weight': randomTensor([2, 5]),
-      'fc2.bias': randomTensor([2]),
-    }
+	// Load the ONNX model.
+	React.useMemo(async () => {
+		const url = '/gradient_graph.onnx'
+		showStatusMessage(`Loading ONNX model at "${url}".`)
+		let session
+		try {
+			session = await ort.InferenceSession.create(url)
+			console.log("Loaded the model. session:", session)
+			showStatusMessage("Loaded the model.")
+		} catch (err) {
+			showErrorMessage("Error loading the model: " + err)
+			console.error("Error loading the model", err)
+			return
+		}
 
-    const results = await session.run(feeds)
-    console.debug("results:", results)
-    for (const [k, tensor] of Object.entries(results)) {
-      console.debug(k, tensor)
-      showMessage(`${k}: ${tensor.data}`)
-    }
-  }
+		// Set up some sample data to try with our model.
+		const x = Float32Array.from(Array.from(Array(10)).map(Math.random))
+		const label = BigInt64Array.from([1n])
+		const batchSize = 1
+		const xTensor = new ort.Tensor('float32', x, [batchSize, x.length])
+		const labelTensor = new ort.Tensor('int64', label, [batchSize])
 
-  function showMessage(message: string) {
-    console.log(message)
-    setMessage(message)
-  }
+		const feeds = {
+			input: xTensor,
+			labels: labelTensor,
+			'fc1.weight': randomTensor([5, 10]),
+			'fc1.bias': randomTensor([5]),
+			'fc2.weight': randomTensor([2, 5]),
+			'fc2.bias': randomTensor([2]),
+		}
 
-  function showErrorMessage(message: string) {
-    console.error(message)
-    setErrorMessage(message)
-  }
+		const results = await session.run(feeds)
+		console.debug("results:", results)
+		for (const [k, tensor] of Object.entries(results)) {
+			console.debug(k, tensor)
+			addMessage(`${k}: ${(tensor as any).data}`)
+		}
+	}, [])
 
-  const url = '/public/gradient_graph_model.onnx'
-  let session
-  try {
-    session = await ort.InferenceSession.create(url)
-    console.log("Loaded the model. session:", session)
-    showMessage("Loaded the model.")
-  } catch (err) {
-    showErrorMessage("Error loading the model: " + err)
-    console.error("Error loading the model", err)
-    return
-  }
-
-  loadOnnxModel()
-
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        {message ? <p>{message}</p> : null}
-        {errorMessage ?
-          <p style={{ color: 'red' }}>
-            {errorMessage}
-          </p>
-          : null}
-      </header>
-    </div>
-  );
+	return (<div className="App">
+		Status: {statusMessage ? <p>{statusMessage}</p> : null}
+		{messages ?
+			<ul>
+				{messages.map((m, i) =>
+					<li key={i}>{m}</li>)
+				}
+			</ul> : null}
+		{errorMessage ?
+			<p style={{ color: 'red' }}>
+				{errorMessage}
+			</p>
+			: null}
+	</div>)
 }
 
 export default App;
