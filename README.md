@@ -114,10 +114,7 @@ For example:
 ```
 
 2. Setup the example project.
-
-   TODO Make the example project.
-
-   1. Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `onnxruntime_web_build_inference_with_training_ops/`.
+   1. Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
    2. `cd training`
-   3. `npm install`
-   4. `npm run start`
+   3. `yarn install`
+   4. `yarn start`. Your browser should open and you should see that the gradient graph gets loaded and used.

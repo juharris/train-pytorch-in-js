@@ -74,6 +74,7 @@ function App() {
 	}, [])
 
 	return (<div className="App">
+		<h3>Gradient Graph Example</h3>
 		<p>{statusMessage}</p>
 		{messages.length > 0 ?
 			<div>
