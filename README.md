@@ -105,16 +105,25 @@ We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/maste
 At this time (March 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled.
 The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
-1. Build ONNX Runtime Web with training operators enabled.\
-See the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
+0. (Optional) Build ONNX Runtime Web with training operators enabled.
+
+For your convenience, we included a build of ONNX Runtime Web with training operators enabled.
+
+We had an issue building the latest version (https://github.com/microsoft/onnxruntime/issues/10852).
+If you would like to build it yourself, see the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
 When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
 For example:
 ```bash
 ./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
 ```
 
-2. Setup the example project.
-   1. Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
-   2. `cd training`
-   3. `yarn install`
-   4. `yarn start`. Your browser should open and you should see that the gradient graph gets loaded and used.
+1. Setup the example project.
+
+   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
+   1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
+   `cp gradient_graph.onnx training/public/gradient_graph.onnx`
+   1. Go to the `training` folder:\
+   `cd training`
+   2. Run `yarn install`
+   3. Run `yarn start`\
+   Your browser should open and you should see that the gradient graph gets loaded and used.
