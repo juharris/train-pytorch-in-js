@@ -41,25 +41,16 @@ We're going to create an ONNX graph that can compute gradients when given traini
 *I did this in WSL (Windows Subsystem for Linux).*
 
 PyTorch: see [pytorch.org](https://pytorch.org/get-started/locally/) for how to install it on your system.
-
-onnxruntime: At this time (March 2022), the utility method to export the gradient graph hasn't been released yet.
-It should be in version v1.11.
-Once it's released, you can do `pip install onnxruntime` (see [onnxruntime.ai](https://onnxruntime.ai) for other options).
-
-Until then, you'll need to build onnxruntime yourself.
-Here's some commands that should help assuming you're using Linux and have CMake and `conda` setup:
+For example:
 ```bash
-conda create --name ort-dev python=3.8 numpy h5py
-conda activate ort-dev
-conda install -c anaconda libstdcxx-ng
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
-pip install flake8 pytest
-git clone --recursive git@github.com:microsoft/onnxruntime.git
-cd onnxruntime
-pip install -r requirements-dev.txt
-./build.sh --config Release --build_shared_lib --parallel $(expr `nproc` - 1) --enable_training --enable_pybind --build_wheel --skip_submodule_sync --skip_tests
+```
 
-export PYTHONPATH="${PWD}/build/Linux/Release:${PYTHONPATH}"
+ONNX Runtime:
+see [onnxruntime.ai](https://onnxruntime.ai) for all installation options.
+For simple stuff, this should work fine:
+```bash
+pip install onnx 'onnxruntime~=1.11' 'onnxruntime-training~=1.11'
 ```
 
 2. Export the model
