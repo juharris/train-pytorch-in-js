@@ -100,7 +100,6 @@ The published ONNX Runtime Web doesn't support the certain operators in our grap
 
 For your convenience, we included a build of ONNX Runtime Web with training operators enabled.
 
-We had an issue building the latest version (https://github.com/microsoft/onnxruntime/issues/10852).
 If you would like to build it yourself, see the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
 When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
 For example:
@@ -112,9 +111,12 @@ For example:
 
    0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
-   `cp gradient_graph.onnx training/public/gradient_graph.onnx`
-   1. Go to the `training` folder:\
+   `cp gradient_graph.onnx training/public`
+   2. Go to the `training` folder:\
    `cd training`
-   2. Run `yarn install`
-   3. Run `yarn start`\
+   3. Run `yarn install`
+   4. Run `yarn start`\
    Your browser should open and you should see that the gradient graph gets loaded and used.
+
+There's no logic yet to actually the train the model.
+That's coming soon!
