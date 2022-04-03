@@ -1,5 +1,5 @@
-# train-pytorch-in-js
-Convert a PyTorch model to train it in JavaScript using ONNX Runtime Web.
+# Train PyTorch Models in JavaScript
+Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
 
 # Steps
 0. Define and train your PyTorch model. You probably already did this.
@@ -100,8 +100,8 @@ See https://github.com/microsoft/onnxruntime/commit/e70ae3303dc57096d1b1ee51483e
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
-At this time (March 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but one is included in this repository.
-The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
+At this time (April 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but the required files are included in this repository.
+The officially published ONNX Runtime Web doesn't support the certain operators in our exported gradient graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
 0. (Optional) Build ONNX Runtime Web with training operators enabled.
 
@@ -146,7 +146,7 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    ```bash
    # In the onnxruntime root directory, do:
    rm <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops/*.{js,wasm}
-   cp build/Linux/Debug/ort{.es*,.min,-wasm,-web}*.{js,map,wasm} <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
+   cp js/web/dist/* js/web/lib/wasm/binding/* <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
    ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
    `cp gradient_graph.onnx training/public`
