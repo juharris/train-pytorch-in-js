@@ -1,5 +1,5 @@
-# train-pytorch-in-js
-Convert a PyTorch model to train it in JavaScript using ONNX Runtime Web.
+# Train PyTorch Models in JavaScript
+Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
 
 # Steps
 0. Define and train your PyTorch model. You probably already did this.
@@ -40,26 +40,24 @@ We're going to create an ONNX graph that can compute gradients when given traini
 
 *I did this in WSL (Windows Subsystem for Linux).*
 
-PyTorch: see [pytorch.org](https://pytorch.org/get-started/locally/) for how to install it on your system.
+* PyTorch
 
-onnxruntime: At this time (March 2022), the utility method to export the gradient graph hasn't been released yet.
-It should be in version v1.11.
-Once it's released, you can do `pip install onnxruntime` (see [onnxruntime.ai](https://onnxruntime.ai) for other options).
-
-Until then, you'll need to build onnxruntime yourself.
-Here's some commands that should help assuming you're using Linux and have CMake and `conda` setup:
+If you don't already have PyTorch installed, see [pytorch.org](https://pytorch.org/get-started/locally/) for how to install it on your system.
+For example:
 ```bash
-conda create --name ort-dev python=3.8 numpy h5py
-conda activate ort-dev
-conda install -c anaconda libstdcxx-ng
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
-pip install flake8 pytest
-git clone --recursive git@github.com:microsoft/onnxruntime.git
-cd onnxruntime
-pip install -r requirements-dev.txt
-./build.sh --config Release --build_shared_lib --parallel $(expr `nproc` - 1) --enable_training --enable_pybind --build_wheel --skip_submodule_sync --skip_tests
+```
 
-export PYTHONPATH="${PWD}/build/Linux/Release:${PYTHONPATH}"
+* ONNX Runtime
+
+See [onnxruntime.ai](https://onnxruntime.ai) for all installation options.
+The utility method we'll use is new in version 1.11 so you'll need at least that version.
+Make sure that the version you use it the same as the version of ONNX Runtime Web that you'll use later.
+This repository includes a pre-built ONNX Runtime Web version for version 1.11 so we'll use that version for our Python onnxruntime dependencies.
+
+Example:
+```bash
+pip install onnx 'onnxruntime==1.11.*' 'onnxruntime-training==1.11.*'
 ```
 
 2. Export the model
@@ -68,7 +66,7 @@ import torch
 from onnxruntime.training.experimental import export_gradient_graph
 
 # We need a custom loss function to load the graph in an InferenceSession in ONNX Runtime Web.
-# You can still make the gradient graph with torch.nn.CrossEntropyLoss() and this test will pass.
+# You can still make the gradient graph with torch.nn.CrossEntropyLoss() and this part will work but you'll get problem later when trying to use the graph in JavaScript.
 def binary_cross_entropy_loss(inp, target):
 	return -torch.sum(target * torch.log2(inp[:, 0]) +
 					  (1-target) * torch.log2(inp[:, 1]))
@@ -79,7 +77,7 @@ loss_fn = binary_cross_entropy_loss
 input_size = 10
 model = MyModel(input_size=input_size, hidden_size=5, num_classes=2)
 
-# We need a place to save the ONNX graph.
+# File path for where to save the ONNX graph.
 gradient_graph_path = 'gradient_graph.onnx'
 
 # We need example input for the ONNX model.
@@ -94,7 +92,7 @@ export_gradient_graph(
 ```
 
 You now have an ONNX graph at `gradient_graph.onnx`.
-If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/commits/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples on how you can validate the file.
+If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/blob/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples.
 
 3. TODO Explain how to set up the optimizer in its own graph.
 See https://github.com/microsoft/onnxruntime/commit/e70ae3303dc57096d1b1ee51483e8789cad51941 
@@ -102,28 +100,61 @@ See https://github.com/microsoft/onnxruntime/commit/e70ae3303dc57096d1b1ee51483e
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
-At this time (March 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled.
-The published ONNX Runtime Web doesn't support the certain operators in our graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
+At this time (April 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but the required files are included in this repository.
+The officially published ONNX Runtime Web doesn't support the certain operators in our exported gradient graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
 0. (Optional) Build ONNX Runtime Web with training operators enabled.
 
-For your convenience, we included a build of ONNX Runtime Web with training operators enabled.
+For your convenience, we included a build of ONNX Runtime Web with training operators enabled for ONNX Runtime version 1.11.
+You can see other versions [here](https://github.com/microsoft/onnxruntime/releases).
 
-We had an issue building the latest version (https://github.com/microsoft/onnxruntime/issues/10852).
-If you would like to build it yourself, see the instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
-When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
+If you would like to build it yourself, here's some commands that should help assuming you're using Linux and have CMake and `conda` setup:
+```bash
+conda create --name ort-dev python=3.8 numpy h5py
+conda activate ort-dev
+conda install -c anaconda libstdcxx-ng
+conda install pytorch torchvision torchaudio cpuonly -c pytorch
+pip install flake8 pytest
+# This is a specific tag that should work, you can try with other versions but this tutorial will work best if the version matches the onnxruntime and onnxruntime-training versions you installed for Python earlier.
+commit="2dfd81b9bb097c90388010e5b7d298498274f8d9"
+git clone --recursive git@github.com:microsoft/onnxruntime.git
+cd onnxruntime
+git checkout ${commit}
+git submodule update --init --recursive
+pip install -r requirements-dev.txt
+```
+
+For the build command, there are instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
+When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training --enable_training_ops` to the build command.
 For example:
 ```bash
+./build.sh --build_wasm --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+./build.sh --build_wasm --enable_wasm_simd --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
 ./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+./build.sh --build_wasm --enable_wasm_simd --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+cp build/Linux/Debug/ort-wasm*.wasm js/web/dist/
+cp build/Linux/Debug/ort-wasm*.js js/web/lib/wasm/binding/
+cd js/web
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
 ```
+
+You might get some errors but if you see ort.js and ort-web.js in the dist/ folder, then it should work.
 
 1. Setup the example project.
 
-   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
+   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`:\
+   ```bash
+   # In the onnxruntime root directory, do:
+   rm <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops/*.{js,wasm}
+   cp js/web/dist/* js/web/lib/wasm/binding/* <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
+   ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
-   `cp gradient_graph.onnx training/public/gradient_graph.onnx`
-   1. Go to the `training` folder:\
+   `cp gradient_graph.onnx training/public`
+   2. Go to the `training` folder:\
    `cd training`
-   2. Run `yarn install`
-   3. Run `yarn start`\
+   3. Run `yarn install`
+   4. Run `yarn start`\
    Your browser should open and you should see that the gradient graph gets loaded and used.
+
+There's no logic yet to actually the train the model.
+That's coming soon!
