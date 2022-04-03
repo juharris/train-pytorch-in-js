@@ -115,22 +115,39 @@ conda activate ort-dev
 conda install -c anaconda libstdcxx-ng
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
 pip install flake8 pytest
-# "v1.11.0" is a specific tag that should work, you can try with other versions but this tutorial will work best if the version matches the onnxruntime and onnxruntime-training versions you installed for Python earlier.
-git clone --recursive --depth 1 --branch v1.11.0 git@github.com:microsoft/onnxruntime.git
+# This is a specific tag that should work, you can try with other versions but this tutorial will work best if the version matches the onnxruntime and onnxruntime-training versions you installed for Python earlier.
+commit="2dfd81b9bb097c90388010e5b7d298498274f8d9"
+git clone --recursive git@github.com:microsoft/onnxruntime.git
 cd onnxruntime
+git checkout ${commit}
+git submodule update --init --recursive
 pip install -r requirements-dev.txt
 ```
 
 For the build command, there are instructions at [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) which currently links to specific instructions [here](https://github.com/microsoft/onnxruntime/blob/master/js/README.md#Build-2).
-When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training_ops` to the build command.
+When you get to the "Build ONNX Runtime WebAssembly" step, you'll need to add `--enable_training --enable_training_ops` to the build command.
 For example:
 ```bash
+./build.sh --build_wasm --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+./build.sh --build_wasm --enable_wasm_simd --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
 ./build.sh --build_wasm --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+./build.sh --build_wasm --enable_wasm_simd --enable_wasm_threads --parallel $(expr `nproc` - 1) --enable_training --enable_training_ops --skip_submodule_sync --skip_tests
+cp build/Linux/Debug/ort-wasm*.wasm js/web/dist/
+cp build/Linux/Debug/ort-wasm*.js js/web/lib/wasm/binding/
+cd js/web
+NODE_OPTIONS=--max-old-space-size=4096 npm run build
 ```
+
+You might get some errors but if you see ort.js and ort-web.js in the dist/ folder, then it should work.
 
 1. Setup the example project.
 
-   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`.
+   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`:\
+   ```bash
+   # In the onnxruntime root directory, do:
+   rm <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops/*.{js,wasm}
+   cp build/Linux/Debug/ort{.es*,.min,-wasm,-web}*.{js,map,wasm} <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
+   ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
    `cp gradient_graph.onnx training/public`
    2. Go to the `training` folder:\
