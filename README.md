@@ -70,7 +70,7 @@ from onnxruntime.training.experimental import export_gradient_graph
 # You can still make the gradient graph with torch.nn.CrossEntropyLoss() and this part will work but you'll get problem later when trying to use the graph in JavaScript.
 def binary_cross_entropy_loss(inp, target):
 	return -torch.sum(target * torch.log2(inp[:, 0]) +
-					  (1-target) * torch.log2(inp[:, 1]))
+		(1-target) * torch.log2(inp[:, 1]))
 
 
 loss_fn = binary_cross_entropy_loss
@@ -89,7 +89,7 @@ example_input = torch.randn(
 example_labels = torch.tensor([1])
 
 export_gradient_graph(
-			model, loss_fn, example_input, example_labels, gradient_graph_path)
+	model, loss_fn, example_input, example_labels, gradient_graph_path)
 ```
 
 You now have an ONNX graph at `gradient_graph.onnx`.
