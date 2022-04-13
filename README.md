@@ -36,6 +36,8 @@ Training the model in Python isn't required to export it and train it in JavaScr
 ## 1. Export the model and optimizer graphs
 We're going to create an ONNX graph that can compute gradients when given training data.
 
+You can follow allow here or see the full example in [example.py](./export/example.py).
+
 ### 1. Install some dependencies
 *I did this in WSL (Windows Subsystem for Linux).*
 
