@@ -1,7 +1,9 @@
+import numpy as np
 import onnx
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
 
+from optim.adam import AdamOnnxGraphBuilder
 
 # Let's use a simple example.
 class MyModel(torch.nn.Module):
@@ -53,5 +55,18 @@ print(f"Done writing gradient graph to \"{gradient_graph_path}\".")
 print("Checking gradient graph...")
 onnx_model = onnx.load(gradient_graph_path)
 onnx.checker.check_model(onnx_model)
-print("Gradient graph should be okay.")
-print("Done.")
+print("✅ Gradient graph should be okay.")
+
+print("Creating Adam optimizer...")
+optimizer = AdamOnnxGraphBuilder(model.named_parameters())
+onnx_optimizer = optimizer.export()
+optimizer_graph_path = 'optimizer_graph.onnx'
+print(f"Writing optimizer graph to \"{optimizer_graph_path}\".")
+onnx.save(onnx_optimizer, optimizer_graph_path)
+
+print("Checking optimizer graph...")
+onnx_optimizer = onnx.load(optimizer_graph_path)
+onnx.checker.check_model(onnx_optimizer)
+print("✅ Optimizer graph should be okay.")
+
+print("✅ Done.")

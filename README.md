@@ -36,8 +36,7 @@ Training the model in Python isn't required to export it and train it in JavaScr
 ## 1. Export the model
 We're going to create an ONNX graph that can compute gradients when given training data.
 
-1. Install some dependencies
-
+### 1. Install some dependencies
 *I did this in WSL (Windows Subsystem for Linux).*
 
 * PyTorch
@@ -60,7 +59,7 @@ Example:
 pip install onnx 'onnxruntime==1.11.*' 'onnxruntime-training==1.11.*'
 ```
 
-2. Export the model
+### 2. Export the model
 ```python
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
@@ -94,8 +93,18 @@ export_gradient_graph(
 You now have an ONNX graph at `gradient_graph.onnx`.
 If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/blob/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples.
 
-3. TODO Explain how to set up the optimizer in its own graph.
-See https://github.com/microsoft/onnxruntime/commit/e70ae3303dc57096d1b1ee51483e8789cad51941 
+### 3. Set up an optimizer
+
+We'll run another ONNX graph to compute the weight updates.
+This repo has an example for an [Adam](https://arxiv.org/abs/1412.6980) optimizer [here](./export/optim/adam.py).
+
+```python
+from optim.adam import AdamOnnxGraphBuilder
+
+optimizer = AdamOnnxGraphBuilder(model.named_parameters())
+onnx_optimizer = optimizer.export()
+onnx.save(onnx_optimizer, 'optimizer_graph.onnx')
+```
 
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
@@ -103,7 +112,7 @@ We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/maste
 At this time (April 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but the required files are included in this repository.
 The officially published ONNX Runtime Web doesn't support the certain operators in our exported gradient graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
-0. (Optional) Build ONNX Runtime Web with training operators enabled.
+### 0. (Optional) Build ONNX Runtime Web with training operators enabled.
 
 For your convenience, we included a build of ONNX Runtime Web with training operators enabled for ONNX Runtime version 1.11.
 You can see other versions [here](https://github.com/microsoft/onnxruntime/releases).
@@ -140,7 +149,7 @@ NODE_OPTIONS=--max-old-space-size=4096 npm run build
 
 You might get some errors but if you see ort.js and ort-web.js in the dist/ folder, then it should work.
 
-1. Setup the example project.
+### 1. Setup the example project.
 
    0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`:\
    ```bash
@@ -157,4 +166,5 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    Your browser should open and you should see that the gradient graph gets loaded and used.
 
 There's no logic yet to actually the train the model.
+We'll use the optimizer graph that we exported earlier.
 That's coming soon!
