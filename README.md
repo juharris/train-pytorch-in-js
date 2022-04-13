@@ -3,7 +3,7 @@ Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript
 
 # Steps
 0. Define and train your PyTorch model. You probably already did this.
-1. Export the model.
+1. Export the model and optimizer graphs.
 2. Load the model in JavaScript.
 
 ## 0. Define and train your PyTorch model
@@ -33,7 +33,7 @@ class MyModel(torch.nn.Module):
 Let's assume that you trained it.
 Training the model in Python isn't required to export it and train it in JavaScript.
 
-## 1. Export the model
+## 1. Export the model and optimizer graphs
 We're going to create an ONNX graph that can compute gradients when given training data.
 
 ### 1. Install some dependencies
@@ -93,10 +93,13 @@ export_gradient_graph(
 You now have an ONNX graph at `gradient_graph.onnx`.
 If you want to validate it, see [orttraining_test_experimental_gradient_graph.py](https://github.com/microsoft/onnxruntime/blob/master/orttraining/orttraining/test/python/orttraining_test_experimental_gradient_graph.py) for examples.
 
-### 3. Set up an optimizer
-
+### 3. Set up an optimizer and export it
 We'll run another ONNX graph to compute the weight updates.
 This repo has an example for an [Adam](https://arxiv.org/abs/1412.6980) optimizer [here](./export/optim/adam.py).
+
+The optimizer is kept separate for a few reasons:
+* You can easily swap it for a different optimizer.
+* Historically, putting the model's gradient graph and the optimizer graph together was too complex to support many different types of optimizers.
 
 ```python
 from optim.adam import AdamOnnxGraphBuilder
