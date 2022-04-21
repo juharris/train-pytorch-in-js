@@ -15,3 +15,7 @@
 .App-link {
   color: #61dafb;
 }
+
+p.error {
+  color: red;
+}

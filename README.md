@@ -163,7 +163,9 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    cp js/web/dist/* js/web/lib/wasm/binding/* <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
    ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
-   `cp gradient_graph.onnx training/public`
+   ```bash
+   cp *_graph.onnx training/public
+   ```
    2. Go to the `training` folder:\
    `cd training`
    3. Run `yarn install`
