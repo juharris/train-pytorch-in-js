@@ -73,11 +73,23 @@ function App() {
 		async function runOptimizer(
 			optimizerSession: any,
 			runModelResults: any,
-			weights: {[name: string]: any},
+			weights: { [name: string]: any },
 			learningRate = 0.001,
 			step = 1,
 		) {
-			const optimizerInputs = {
+			const optimizerInputs: { [name: string]: any } = {}
+			for (const [name, tensor] of Object.entries(weights)) {
+				optimizerInputs[name] = tensor
+				optimizerInputs[name + '.gradient'] = runModelResults[name + '_gradient']
+				// TODO
+				// optimizerInputs[name + '.step'] = 
+				// optimizerInputs[name + '.learning_rate'] = 
+				// optimizerInputs[name + '.exp_avg'] = np.zeros(list(param.shape), dtype = np.float32)
+				// optimizerInputs[name + '.exp_avg_sq'] = np.zeros(list(param.shape), dtype = np.float32)
+				// optimizerInputs[name + '.mixed_precision'] = np.array([], dtype = np.float16)
+				// optimizerInputs[name + '.loss_scaler'] = np.array([], dtype = np.float32)
+				// optimizerInputs[name + '.global_gradient_norm'] = np.array([], dtype = np.float32)
+				// optimizerInputs[name + '.should_update'] = np.array([True], dtype = np.bool)
 			}
 			const result = await optimizerSession.run(optimizerInputs)
 
@@ -95,7 +107,7 @@ function App() {
 			const data = randomTensor([batchSize, dataDimensions])
 			const labels = new ort.Tensor('int64', label, [batchSize])
 
-			const weights  = {
+			const weights = {
 				'fc1.weight': randomTensor([5, 10]),
 				'fc1.bias': randomTensor([5]),
 				'fc2.weight': randomTensor([2, 5]),
