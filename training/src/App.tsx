@@ -34,7 +34,6 @@ function App() {
 		session: any,
 		feeds: any,
 		isLoggingEnabled = false) {
-
 		const result = await session.run(feeds)
 		if (isLoggingEnabled) {
 			console.debug("results:", result)
@@ -71,8 +70,18 @@ function App() {
 			return result
 		}
 
-		async function runOptimizer(optimizerSession: any, runModelResults: any) {
-			// TODO
+		async function runOptimizer(
+			optimizerSession: any,
+			runModelResults: any,
+			weights: {[name: string]: any},
+			learningRate = 0.001,
+			step = 1,
+		) {
+			const optimizerInputs = {
+			}
+			const result = await optimizerSession.run(optimizerInputs)
+
+			// TODO Return new weights.
 		}
 
 		async function train() {
@@ -86,13 +95,17 @@ function App() {
 			const data = randomTensor([batchSize, dataDimensions])
 			const labels = new ort.Tensor('int64', label, [batchSize])
 
-			const feeds = {
-				input: data,
-				labels: labels,
+			const weights  = {
 				'fc1.weight': randomTensor([5, 10]),
 				'fc1.bias': randomTensor([5]),
 				'fc2.weight': randomTensor([2, 5]),
 				'fc2.bias': randomTensor([2]),
+			}
+
+			const feeds = {
+				input: data,
+				labels: labels,
+				...weights,
 			}
 
 			const optimizerUrl = '/optimizer_graph.onnx'
@@ -100,7 +113,7 @@ function App() {
 
 			// TODO Loop over batches and epochs.
 			const runModelResults = await runModel(session, feeds, true)
-			const newWeights = await runOptimizer(optimizerSession, runModelResults)
+			const newWeights = await runOptimizer(optimizerSession, runModelResults, weights)
 			console.debug("newWeights:", newWeights)
 		}
 
