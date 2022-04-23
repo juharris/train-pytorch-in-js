@@ -4,8 +4,12 @@ import './App.css'
 // We load ONNX Runtime Web using a script tag in index.html.
 declare const ort: any
 
+function size(shape: number[]): number{
+	return shape.reduce((a, b) => a * b)
+}
+
 function randomArray(shape: number[]): Float32Array {
-	const result = new Float32Array(shape.reduce((a, b) => a * b))
+	const result = new Float32Array(size(shape))
 	for (let i = 0; i < result.length; ++i) {
 		result[i] = Math.random()
 	}
@@ -75,21 +79,24 @@ function App() {
 			runModelResults: any,
 			weights: { [name: string]: any },
 			learningRate = 0.001,
-			step = 1,
 		) {
+			// TODO Figure out how many steps of the optimizer should be run per batch.
+			// Do we restart the step at 1 for each batch?
+			const step = 1
 			const optimizerInputs: { [name: string]: any } = {}
 			for (const [name, tensor] of Object.entries(weights)) {
+				// TODO Maybe some should come from output of previous calls to the optimizer (*.out)?
+				// Maybe that's just if we run a batch multiple times?
 				optimizerInputs[name] = tensor
 				optimizerInputs[name + '.gradient'] = runModelResults[name + '_gradient']
-				// TODO
-				// optimizerInputs[name + '.step'] = 
-				// optimizerInputs[name + '.learning_rate'] = 
-				// optimizerInputs[name + '.exp_avg'] = np.zeros(list(param.shape), dtype = np.float32)
-				// optimizerInputs[name + '.exp_avg_sq'] = np.zeros(list(param.shape), dtype = np.float32)
-				// optimizerInputs[name + '.mixed_precision'] = np.array([], dtype = np.float16)
-				// optimizerInputs[name + '.loss_scaler'] = np.array([], dtype = np.float32)
-				// optimizerInputs[name + '.global_gradient_norm'] = np.array([], dtype = np.float32)
-				// optimizerInputs[name + '.should_update'] = np.array([True], dtype = np.bool)
+				optimizerInputs[name + '.step'] = new ort.Tensor('int64', [step])
+				optimizerInputs[name + '.learning_rate'] = new ort.Tensor('float32', [learningRate])
+				optimizerInputs[name + '.should_update'] = new ort.Tensor('bool', [true])
+				optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
+				optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
+				optimizerInputs[name + '.global_gradient_norm'] = new ort.Tensor('float32', [])
+				optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float16', [])
+				optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
 			}
 			const result = await optimizerSession.run(optimizerInputs)
 
@@ -126,7 +133,6 @@ function App() {
 			// TODO Loop over batches and epochs.
 			const runModelResults = await runModel(session, feeds, true)
 			const newWeights = await runOptimizer(optimizerSession, runModelResults, weights)
-			console.debug("newWeights:", newWeights)
 		}
 
 		train()
