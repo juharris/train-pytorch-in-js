@@ -1,24 +1,7 @@
+import ort from 'ort'
 import React from 'react'
 import './App.css'
-
-// We load ONNX Runtime Web using a script tag in index.html.
-declare const ort: any
-
-function size(shape: number[]): number{
-	return shape.reduce((a, b) => a * b)
-}
-
-function randomArray(shape: number[]): Float32Array {
-	const result = new Float32Array(size(shape))
-	for (let i = 0; i < result.length; ++i) {
-		result[i] = Math.random()
-	}
-	return result
-}
-
-function randomTensor(shape: number[]) {
-	return new ort.Tensor('float32', randomArray(shape), shape)
-}
+import { randomTensor, size } from './tensor-utils'
 
 function App() {
 	const [messages, setMessages] = React.useState<string[]>([])
@@ -35,7 +18,7 @@ function App() {
 	}
 
 	async function runModel(
-		session: any,
+		session: ort.InferenceSession,
 		feeds: any,
 		isLoggingEnabled = false) {
 		const result = await session.run(feeds)
@@ -57,8 +40,8 @@ function App() {
 	React.useEffect(() => {
 		setMessages([])
 
-		async function getSession(url: string) {
-			let result
+		async function getSession(url: string): Promise<ort.InferenceSession> {
+			let result: ort.InferenceSession
 			showStatusMessage(`Loading ONNX model at "${url}"...`)
 
 			try {
