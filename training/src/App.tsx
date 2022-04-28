@@ -1,9 +1,10 @@
 import ort from 'ort'
 import React from 'react'
 import './App.css'
-import { randomTensor, size } from './tensor-utils'
+import { randomTensor, size, TensorMap } from './tensor-utils'
 
 function App() {
+	const [numEpochs, setNumEpochs] = React.useState<number>(20)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -17,6 +18,10 @@ function App() {
 		setErrorMessage(message)
 	}
 
+	function addMessage(message: string) {
+		setMessages(messages => [...messages, message])
+	}
+
 	async function runModel(
 		session: ort.InferenceSession,
 		feeds: any,
@@ -25,18 +30,14 @@ function App() {
 		if (isLoggingEnabled) {
 			console.debug("results:", result)
 
-			const newMessages: string[] = []
 			for (const [k, tensor] of Object.entries(result)) {
-				console.debug(k, tensor)
-				newMessages.push(`${k}: ${(tensor as any).data}`)
+				addMessage(`  ${k}: ${tensor.data}`)
 			}
-			setMessages(messages => [...messages, ...newMessages])
 		}
 
 		return result
 	}
 
-	// Load the ONNX model.
 	React.useEffect(() => {
 		setMessages([])
 
@@ -57,33 +58,49 @@ function App() {
 			return result
 		}
 
+		/**
+		 * Run the optimizer.
+		 *
+		 * @param optimizerSession 
+		 * @param runModelResults 
+		 * @param weights The weights to optimize. The values will be updated.
+		 * @param prevOptimizerOutput 
+		 * @param learningRate 
+		 * @returns 
+		 */
 		async function runOptimizer(
-			optimizerSession: any,
-			runModelResults: any,
-			weights: { [name: string]: any },
+			optimizerSession: ort.InferenceSession,
+			runModelResults: TensorMap,
+			weights: TensorMap,
+			prevOptimizerOutput: TensorMap | undefined,
 			learningRate = 0.001,
-		) {
-			// TODO Figure out how many steps of the optimizer should be run per batch.
-			// Do we restart the step at 1 for each batch?
-			const step = 1
+		): Promise<TensorMap> {
 			const optimizerInputs: { [name: string]: any } = {}
 			for (const [name, tensor] of Object.entries(weights)) {
-				// TODO Maybe some should come from output of previous calls to the optimizer (*.out)?
-				// Maybe that's just if we run a batch multiple times?
 				optimizerInputs[name] = tensor
 				optimizerInputs[name + '.gradient'] = runModelResults[name + '_gradient']
-				optimizerInputs[name + '.step'] = new ort.Tensor('int64', [step])
 				optimizerInputs[name + '.learning_rate'] = new ort.Tensor('float32', [learningRate])
 				optimizerInputs[name + '.should_update'] = new ort.Tensor('bool', [true])
-				optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
-				optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
 				optimizerInputs[name + '.global_gradient_norm'] = new ort.Tensor('float32', [])
 				optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float16', [])
-				optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
+				if (prevOptimizerOutput) {
+					for (const suffix of ['.exp_avg', 'exp_avg_sq', '.mixed_precision', '.step']) {
+						optimizerInputs[name + suffix] = prevOptimizerOutput[name + suffix + '.out']
+					}
+				} else {
+					optimizerInputs[name + '.step'] = new ort.Tensor('int64', [1])
+					optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
+					optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
+					optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
+				}
 			}
-			const result = await optimizerSession.run(optimizerInputs)
+			const output = await optimizerSession.run(optimizerInputs)
 
-			// TODO Return new weights.
+			for (const name of Object.keys(weights)) {
+				weights[name] = output[name + '.out']
+			}
+
+			return output
 		}
 
 		async function train() {
@@ -97,25 +114,30 @@ function App() {
 			const data = randomTensor([batchSize, dataDimensions])
 			const labels = new ort.Tensor('int64', label, [batchSize])
 
-			const weights = {
+			let weights = {
 				'fc1.weight': randomTensor([5, 10]),
 				'fc1.bias': randomTensor([5]),
 				'fc2.weight': randomTensor([2, 5]),
 				'fc2.bias': randomTensor([2]),
 			}
 
-			const feeds = {
-				input: data,
-				labels: labels,
-				...weights,
-			}
-
 			const optimizerUrl = '/optimizer_graph.onnx'
 			const optimizerSession = await getSession(optimizerUrl)
 
-			// TODO Loop over batches and epochs.
-			const runModelResults = await runModel(session, feeds, true)
-			const newWeights = await runOptimizer(optimizerSession, runModelResults, weights)
+			let prevOptimizerOutput: TensorMap | undefined = undefined
+			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
+				addMessage(`Starting epoch ${epoch}...`)
+				// TODO Loop over batches.
+				const feeds = {
+					input: data,
+					labels: labels,
+					...weights,
+				}
+				const runModelResults = await runModel(session, feeds)
+				addMessage(`... loss: ${runModelResults['loss'].data}`)
+				prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
+
+			}
 		}
 
 		train()
@@ -127,11 +149,9 @@ function App() {
 		{messages.length > 0 ?
 			<div>
 				<h4>Messages:</h4>
-				<ul>
-					{messages.map((m, i) =>
-						<li key={i}>{m}</li>)
-					}
-				</ul>
+				{messages.map((m, i) =>
+					<p key={i}>{m}</p>)
+				}
 			</div> : null}
 		{errorMessage ?
 			<p className='error'>
