@@ -161,6 +161,8 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    # In the onnxruntime root directory, do:
    rm <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops/*.{js,wasm}
    cp js/web/dist/* js/web/lib/wasm/binding/* <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
+   # Get the declaration files.
+   cp js/common/dist/lib/*.d.ts <your workspace>/FL/train-pytorch-in-js/training/src/ort
    ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
    ```bash

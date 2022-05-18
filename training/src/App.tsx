@@ -1,7 +1,6 @@
-import ort from 'ort'
 import React from 'react'
 import './App.css'
-import { randomTensor, size, TensorMap } from './tensor-utils'
+import { randomTensor, size } from './tensor-utils'
 
 function App() {
 	const [numEpochs, setNumEpochs] = React.useState<number>(20)
@@ -31,7 +30,7 @@ function App() {
 			console.debug("results:", result)
 
 			for (const [k, tensor] of Object.entries(result)) {
-				addMessage(`  ${k}: ${tensor.data}`)
+				addMessage(`  ${k}: ${(tensor as any).data}`)
 			}
 		}
 
@@ -70,11 +69,11 @@ function App() {
 		 */
 		async function runOptimizer(
 			optimizerSession: ort.InferenceSession,
-			runModelResults: TensorMap,
-			weights: TensorMap,
-			prevOptimizerOutput: TensorMap | undefined,
+			runModelResults: ort.InferenceSession.ReturnType,
+			weights: ort.InferenceSession.OnnxValueMapType,
+			prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined,
 			learningRate = 0.001,
-		): Promise<TensorMap> {
+		): Promise<ort.InferenceSession.ReturnType> {
 			const optimizerInputs: { [name: string]: any } = {}
 			for (const [name, tensor] of Object.entries(weights)) {
 				optimizerInputs[name] = tensor
@@ -89,15 +88,15 @@ function App() {
 					}
 				} else {
 					optimizerInputs[name + '.step'] = new ort.Tensor('int64', [1])
-					optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
-					optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size(tensor.shape)).fill(0), tensor.shape)
+					optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
+					optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
 					optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
 				}
 			}
 			const output = await optimizerSession.run(optimizerInputs)
 
 			for (const name of Object.keys(weights)) {
-				weights[name] = output[name + '.out']
+				(weights as any)[name] = output[name + '.out']
 			}
 
 			return output
@@ -124,7 +123,7 @@ function App() {
 			const optimizerUrl = '/optimizer_graph.onnx'
 			const optimizerSession = await getSession(optimizerUrl)
 
-			let prevOptimizerOutput: TensorMap | undefined = undefined
+			let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				addMessage(`Starting epoch ${epoch}...`)
 				// TODO Loop over batches.

@@ -1,8 +1,4 @@
-import ort from 'ort'
-
-export type TensorMap = { [key: string]: ort.Tensor }
-
-export function size(shape: number[]): number {
+export function size(shape: readonly number[]): number {
 	return shape.reduce((a, b) => a * b)
 }
 
