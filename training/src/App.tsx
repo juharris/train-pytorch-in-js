@@ -41,20 +41,18 @@ function App() {
 		setMessages([])
 
 		async function getSession(url: string): Promise<ort.InferenceSession> {
-			let result: ort.InferenceSession
 			showStatusMessage(`Loading ONNX model at "${url}"...`)
 
 			try {
-				result = await ort.InferenceSession.create(url)
+				const result = await ort.InferenceSession.create(url)
 				console.log("Loaded the model. session:", result)
 				showStatusMessage(`Loaded the model at "${url}."`)
+				return result
 			} catch (err) {
 				showErrorMessage("Error loading the model: " + err)
 				console.error("Error loading the model", err)
 				throw err
 			}
-
-			return result
 		}
 
 		/**
@@ -74,25 +72,27 @@ function App() {
 			prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined,
 			learningRate = 0.001,
 		): Promise<ort.InferenceSession.ReturnType> {
-			const optimizerInputs: { [name: string]: any } = {}
+			const optimizerInputs: { [name: string]: ort.OnnxValue } = {}
 			for (const [name, tensor] of Object.entries(weights)) {
 				optimizerInputs[name] = tensor
-				optimizerInputs[name + '.gradient'] = runModelResults[name + '_gradient']
+				optimizerInputs[name + '.gradient'] = runModelResults[name + '_grad']
 				optimizerInputs[name + '.learning_rate'] = new ort.Tensor('float32', [learningRate])
 				optimizerInputs[name + '.should_update'] = new ort.Tensor('bool', [true])
 				optimizerInputs[name + '.global_gradient_norm'] = new ort.Tensor('float32', [])
-				optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float16', [])
+				// Should be float16, but that's not supported.
+				optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float32', [])
 				if (prevOptimizerOutput) {
 					for (const suffix of ['.exp_avg', 'exp_avg_sq', '.mixed_precision', '.step']) {
 						optimizerInputs[name + suffix] = prevOptimizerOutput[name + suffix + '.out']
 					}
 				} else {
-					optimizerInputs[name + '.step'] = new ort.Tensor('int64', [1])
+					optimizerInputs[name + '.step'] = new ort.Tensor('int64', new BigInt64Array([1n]))
 					optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
 					optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
 					optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
 				}
 			}
+
 			const output = await optimizerSession.run(optimizerInputs)
 
 			for (const name of Object.keys(weights)) {
@@ -125,7 +125,7 @@ function App() {
 
 			let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
-				addMessage(`Starting epoch ${epoch}...`)
+				addMessage(`Starting epoch ${epoch} ...`)
 				// TODO Loop over batches.
 				const feeds = {
 					input: data,
