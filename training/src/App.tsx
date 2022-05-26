@@ -39,6 +39,7 @@ function App() {
 
 	React.useEffect(() => {
 		setMessages([])
+		setErrorMessage("")
 
 		async function getSession(url: string): Promise<ort.InferenceSession> {
 			showStatusMessage(`Loading ONNX model at "${url}"...`)
@@ -77,19 +78,24 @@ function App() {
 				optimizerInputs[name] = tensor
 				optimizerInputs[name + '.gradient'] = runModelResults[name + '_grad']
 				optimizerInputs[name + '.learning_rate'] = new ort.Tensor('float32', [learningRate])
-				optimizerInputs[name + '.should_update'] = new ort.Tensor('bool', [true])
-				optimizerInputs[name + '.global_gradient_norm'] = new ort.Tensor('float32', [])
+				// Not used but could be in the future.
+				// optimizerInputs[name + '.should_update'] = new ort.Tensor('bool', [true])
+				// optimizerInputs[name + '.global_gradient_norm'] = new ort.Tensor('float32', [])
 				// Should be float16, but that's not supported.
-				optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float32', [])
+				// optimizerInputs[name + '.loss_scaler'] = new ort.Tensor('float32', [])
 				if (prevOptimizerOutput) {
-					for (const suffix of ['.exp_avg', 'exp_avg_sq', '.mixed_precision', '.step']) {
-						optimizerInputs[name + suffix] = prevOptimizerOutput[name + suffix + '.out']
+					for (const suffix of ['.exp_avg', '.exp_avg_sq', '.mixed_precision', '.step']) {
+						const prev = prevOptimizerOutput[name + suffix + '.out']
+						if (prev) {
+							optimizerInputs[name + suffix] = prevOptimizerOutput[name + suffix + '.out']
+						}
 					}
 				} else {
 					optimizerInputs[name + '.step'] = new ort.Tensor('int64', new BigInt64Array([1n]))
 					optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
 					optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
-					optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
+					// Not used but could be in the future.
+					// optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
 				}
 			}
 
@@ -124,19 +130,26 @@ function App() {
 			const optimizerSession = await getSession(optimizerUrl)
 
 			let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
+			showStatusMessage("Starting training...")
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
-				addMessage(`Starting epoch ${epoch} ...`)
-				// TODO Loop over batches.
+				// TODO Loop over batches of data.
 				const feeds = {
 					input: data,
 					labels: labels,
 					...weights,
 				}
-				const runModelResults = await runModel(session, feeds)
-				addMessage(`... loss: ${runModelResults['loss'].data}`)
-				prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 
+				try {
+					const runModelResults = await runModel(session, feeds)
+					addMessage(`Epoch: ${epoch}: Loss: ${runModelResults['loss'].data}`)
+					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
+				} catch (err) {
+					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
+					console.error(err)
+					break
+				}
 			}
+			showStatusMessage("Done training.")
 		}
 
 		train()
@@ -147,10 +160,11 @@ function App() {
 		<p>{statusMessage}</p>
 		{messages.length > 0 ?
 			<div>
-				<h4>Messages:</h4>
-				{messages.map((m, i) =>
-					<p key={i}>{m}</p>)
-				}
+				<h4>Logs:</h4>
+				{messages.map((m, i) => (<>
+					<span key={i}>{m}</span>
+					<br />
+				</>))}
 			</div> : null}
 		{errorMessage ?
 			<p className='error'>
