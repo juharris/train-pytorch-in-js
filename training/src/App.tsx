@@ -3,7 +3,7 @@ import './App.css'
 import { randomTensor, size } from './tensor-utils'
 
 function App() {
-	const [numEpochs, _setNumEpochs] = React.useState<number>(20)
+	const [numEpochs, setNumEpochs] = React.useState<number>(20)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -21,22 +21,6 @@ function App() {
 		setMessages(messages => [...messages, message])
 	}
 
-	async function runModel(
-		session: ort.InferenceSession,
-		feeds: any,
-		isLoggingEnabled = false) {
-		const result = await session.run(feeds)
-		if (isLoggingEnabled) {
-			console.debug("results:", result)
-
-			for (const [k, tensor] of Object.entries(result)) {
-				addMessage(`  ${k}: ${(tensor as any).data}`)
-			}
-		}
-
-		return result
-	}
-
 	React.useEffect(() => {
 		setMessages([])
 		setErrorMessage("")
@@ -47,13 +31,29 @@ function App() {
 			try {
 				const result = await ort.InferenceSession.create(url)
 				console.debug("Loaded the model. session:", result)
-				showStatusMessage(`Loaded the model at "${url}."`)
+				showStatusMessage(`Loaded the model at "${url}"`)
 				return result
 			} catch (err) {
 				showErrorMessage("Error loading the model: " + err)
 				console.error("Error loading the model", err)
 				throw err
 			}
+		}
+
+		async function runModel(
+			session: ort.InferenceSession,
+			feeds: any,
+			isLoggingEnabled = false) {
+			const result = await session.run(feeds)
+			if (isLoggingEnabled) {
+				console.debug("results:", result)
+
+				for (const [k, tensor] of Object.entries(result)) {
+					addMessage(`  ${k}: ${(tensor as any).data}`)
+				}
+			}
+
+			return result
 		}
 
 		/**
@@ -130,7 +130,7 @@ function App() {
 			const optimizerSession = await getSession(optimizerUrl)
 
 			let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
-			showStatusMessage("Starting training...")
+			showStatusMessage("Training...")
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				// TODO Loop over batches of data.
 				const feeds = {
@@ -141,7 +141,8 @@ function App() {
 
 				try {
 					const runModelResults = await runModel(session, feeds)
-					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${runModelResults['loss'].data}`)
+					const loss = runModelResults['loss'].data[0] as number
+					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${loss.toFixed(4)}`)
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 				} catch (err) {
 					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
@@ -149,14 +150,14 @@ function App() {
 					break
 				}
 			}
-			showStatusMessage("Done training.")
+			showStatusMessage("Done training")
 		}
 
 		train()
-	}, [])
+	}, [numEpochs])
 
 	return (<div className="App">
-		<h3>Gradient Graph Example</h3>
+		<h3>ONNX Runtime Web Training Demo</h3>
 		<p>{statusMessage}</p>
 		{messages.length > 0 &&
 			<div>

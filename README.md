@@ -5,6 +5,9 @@ Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript
 0. Define and train your PyTorch model. You probably already did this.
 1. Export the model and optimizer graphs.
 2. Load the model in JavaScript.
+3. Train the model
+
+![training animation](./assets/training.gif)
 
 ## 0. Define and train your PyTorch model
 You probably already did this.
