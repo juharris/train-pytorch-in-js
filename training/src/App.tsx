@@ -3,7 +3,7 @@ import './App.css'
 import { randomTensor, size } from './tensor-utils'
 
 function App() {
-	const [numEpochs, setNumEpochs] = React.useState<number>(20)
+	const [numEpochs, _setNumEpochs] = React.useState<number>(20)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -46,7 +46,7 @@ function App() {
 
 			try {
 				const result = await ort.InferenceSession.create(url)
-				console.log("Loaded the model. session:", result)
+				console.debug("Loaded the model. session:", result)
 				showStatusMessage(`Loaded the model at "${url}."`)
 				return result
 			} catch (err) {
@@ -141,7 +141,7 @@ function App() {
 
 				try {
 					const runModelResults = await runModel(session, feeds)
-					addMessage(`Epoch: ${epoch}: Loss: ${runModelResults['loss'].data}`)
+					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${runModelResults['loss'].data}`)
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 				} catch (err) {
 					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
@@ -158,19 +158,20 @@ function App() {
 	return (<div className="App">
 		<h3>Gradient Graph Example</h3>
 		<p>{statusMessage}</p>
-		{messages.length > 0 ?
+		{messages.length > 0 &&
 			<div>
 				<h4>Logs:</h4>
-				{messages.map((m, i) => (<>
-					<span key={i}>{m}</span>
-					<br />
-				</>))}
-			</div> : null}
-		{errorMessage ?
+				<div className="logs">
+					{messages.map((m, i) => (<div key={i}>
+						{m}
+						<br />
+					</div>))}
+				</div>
+			</div>}
+		{errorMessage &&
 			<p className='error'>
 				{errorMessage}
-			</p>
-			: null}
+			</p>}
 	</div>)
 }
 
