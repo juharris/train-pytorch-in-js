@@ -5,7 +5,7 @@
 # optimizer.py
 
 from onnx import helper
-from onnx import TensorProto, OperatorSetIdProto
+from onnx import TensorProto
 
 class AdamOnnxGraphBuilder:
     def __init__(self,
@@ -40,10 +40,12 @@ class AdamOnnxGraphBuilder:
                                 name+'.gradient', # gradient of the weight to be used for update
                                 name+'.exp_avg', # first order moment for this weight
                                 name+'.exp_avg_sq', # second order moment for this weight
-                                name+'.mixed_precision', # mixed precision weight representation (required if computation to be done in mp)
-                                name+'.loss_scaler', # used for gradient scaling
-                                name+'.global_gradient_norm', # used for gradient scaling
-                                name+'.should_update'] # whether or not to skip updating the weights
+                                # These aren't needed and cause problems in ORT Web because float16 is not supported.
+                                # name+'.mixed_precision', # mixed precision weight representation (required if computation to be done in mp)
+                                # name+'.loss_scaler', # used for gradient scaling
+                                # name+'.global_gradient_norm', # used for gradient scaling
+                                # name+'.should_update', # whether or not to skip updating the weights
+            ]
 
             node_inputs = [
                 helper.make_tensor_value_info(name+'.learning_rate', TensorProto.FLOAT , [1]),
@@ -52,10 +54,11 @@ class AdamOnnxGraphBuilder:
                 helper.make_tensor_value_info(name+'.gradient', TensorProto.FLOAT , list(param.shape)),
                 helper.make_tensor_value_info(name+'.exp_avg', TensorProto.FLOAT , list(param.shape)),
                 helper.make_tensor_value_info(name+'.exp_avg_sq', TensorProto.FLOAT , list(param.shape)),
-                helper.make_tensor_value_info(name+'.mixed_precision', TensorProto.FLOAT16 , [0]),
-                helper.make_tensor_value_info(name+'.loss_scaler', TensorProto.FLOAT, []),
-                helper.make_tensor_value_info(name+'.global_gradient_norm', TensorProto.FLOAT, []),
-                helper.make_tensor_value_info(name+'.should_update', TensorProto.BOOL, [1]),
+                # These aren't needed and cause problems in ORT Web because float16 is not supported.
+                # helper.make_tensor_value_info(name+'.mixed_precision', TensorProto.FLOAT16 , [0]),
+                # helper.make_tensor_value_info(name+'.loss_scaler', TensorProto.FLOAT, []),
+                # helper.make_tensor_value_info(name+'.global_gradient_norm', TensorProto.FLOAT, []),
+                # helper.make_tensor_value_info(name+'.should_update', TensorProto.BOOL, [1]),
             ]
             graph_inputs.extend(node_inputs)
 
@@ -64,7 +67,9 @@ class AdamOnnxGraphBuilder:
                                  name+'.exp_avg_sq.out', # second order moment output
                                  name+'.out', # updated weights
                                  name+'.gradient.out', # gradients output
-                                 name+'.mixed_precision.out'] # updated mixed precision weights
+                                 # Not needed and causes problems in ORT Web because float16 is not supported.
+                                #  name+'.mixed_precision.out',  # updated mixed precision weights
+                                 ]
 
             node_outputs = [
                 helper.make_tensor_value_info(name+'.step.out', TensorProto.INT64, [1]),
@@ -72,7 +77,8 @@ class AdamOnnxGraphBuilder:
                 helper.make_tensor_value_info(name+'.exp_avg_sq.out', TensorProto.FLOAT , list(param.shape)),
                 helper.make_tensor_value_info(name+'.out', TensorProto.FLOAT , list(param.shape)),
                 helper.make_tensor_value_info(name+'.gradient.out', TensorProto.FLOAT , list(param.shape)),
-                helper.make_tensor_value_info(name+'.mixed_precision.out', TensorProto.FLOAT16, [0])
+                # Not needed and causes problems in ORT Web because float16 is not supported.
+                # helper.make_tensor_value_info(name+'.mixed_precision.out', TensorProto.FLOAT16, [0])
             ]
             graph_outputs.extend(node_outputs)
 

@@ -5,6 +5,9 @@ Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript
 0. Define and train your PyTorch model. You probably already did this.
 1. Export the model and optimizer graphs.
 2. Load the model in JavaScript.
+3. Train the model
+
+![training animation](./assets/training.gif)
 
 ## 0. Define and train your PyTorch model
 You probably already did this.
@@ -156,11 +159,14 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
 
 ### 1. Setup the example project.
 
-   0. (If you built ONNX Runtime Web yourseulf) Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`:\
+   0. (If you built ONNX Runtime Web yourself)
+   Put the files from the ONNX Runtime Web build (ort.js and others such as the wasm files, if needed) in `training/public/onnxruntime_web_build_inference_with_training_ops/`:
    ```bash
    # In the onnxruntime root directory, do:
    rm <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops/*.{js,wasm}
    cp js/web/dist/* js/web/lib/wasm/binding/* <your workspace>/train-pytorch-in-js/training/public/onnxruntime_web_build_inference_with_training_ops
+   # Get the declaration files.
+   cp js/common/dist/lib/*.d.ts <your workspace>/FL/train-pytorch-in-js/training/src/ort
    ```
    1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
    ```bash
@@ -170,8 +176,4 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    `cd training`
    3. Run `yarn install`
    4. Run `yarn start`\
-   Your browser should open and you should see that the gradient graph gets loaded and used.
-
-There's no logic yet to actually the train the model.
-We'll use the optimizer graph that we exported earlier.
-That's coming soon!
+   Your browser should open and you should see that the gradient graph gets loaded and training starts.
