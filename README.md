@@ -1,15 +1,22 @@
 # Train PyTorch Models in JavaScript
-Convert a [PyTorch](https://https://pytorch.org) model to train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
+Convert a [PyTorch](https://https://pytorch.org) model and train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
 
-# Steps
-0. Define and train your PyTorch model. You probably already did this.
-1. Export the model and optimizer graphs.
-2. Load the model in JavaScript.
-3. Train the model
+# Overview
+Steps:
 
-![training animation](./assets/training.gif)
+0. Define your PyTorch model. You probably already did this.
+1. Use the new utility method to export an ONNX gradient graph for the model.
+2. Set up an optimizer graph.
+3. Load the graphs in JavaScript.
+4. Use the graphs to train the model.
 
-## 0. Define and train your PyTorch model
+Here's how it looks in the browser:
+
+![example of how training looks in the browser](./assets/training.gif)
+
+Details:
+
+## 0. Define your PyTorch model
 You probably already did this.
 Here's our simple example:
 ```python
@@ -33,16 +40,15 @@ class MyModel(torch.nn.Module):
 		return out
 ```
 
-Let's assume that you trained it.
-Training the model in Python isn't required to export it and train it in JavaScript.
+You can train it in Python to get some good initial weights but that's not required to export it and then train it in JavaScript.
 
-## 1. Export the model and optimizer graphs
+## 1. Export the model's gradient and optimizer graphs
 We're going to create an ONNX graph that can compute gradients when given training data.
 
 You can follow along here or see the full example in [example.py](./export/example.py).
 
 ### 1. Install some dependencies
-*I did this in WSL (Windows Subsystem for Linux).*
+*I did this in Windows Subsystem for Linux (WSL).*
 
 * PyTorch
 
@@ -64,7 +70,8 @@ Example:
 pip install onnx 'onnxruntime==1.11.*' 'onnxruntime-training==1.11.*'
 ```
 
-### 2. Export the model
+### 2. Export the model's gradient graph
+
 ```python
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
@@ -117,7 +124,7 @@ onnx.save(onnx_optimizer, 'optimizer_graph.onnx')
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
-At this time (April 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but the required files are included in this repository.
+At this time (May 2022), this only works with custom ONNX Runtine Web builds which have training operators enabled but the required files are included in this repository.
 The officially published ONNX Runtime Web doesn't support the certain operators in our exported gradient graph with gradient calculations such as `GatherGrad` when using an InferenceSession.
 
 ### 0. (Optional) Build ONNX Runtime Web with training operators enabled.
@@ -168,7 +175,7 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    # Get the declaration files.
    cp js/common/dist/lib/*.d.ts <your workspace>/FL/train-pytorch-in-js/training/src/ort
    ```
-   1. Copy your gradient graph to `training/public/gradient_graph.onnx`:\
+   1. Copy your gradient graph to `training/public/gradient_graph.onnx`:
    ```bash
    cp *_graph.onnx training/public
    ```
