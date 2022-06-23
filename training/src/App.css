@@ -2,18 +2,12 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #282c34;
-  color: #ddd;
   font-size: calc(10px + 2vmin);
 
   padding-left: 5%;
   padding-right: 5%;
 
   word-break: break-all;
-}
-
-.App-link {
-  color: #61dafb;
 }
 
 p.error {
