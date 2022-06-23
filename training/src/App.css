@@ -1,13 +1,9 @@
 .App {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  font-size: calc(10px + 2vmin);
-
-  padding-left: 5%;
-  padding-right: 5%;
-
   word-break: break-all;
+}
+
+div.section {
+  margin-bottom: 1em;
 }
 
 p.error {

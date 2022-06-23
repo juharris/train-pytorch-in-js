@@ -1,4 +1,4 @@
-import { Button, TextField } from '@mui/material'
+import { Button, Container, TextField } from '@mui/material'
 import React from 'react'
 import './App.css'
 import { randomTensor, size } from './tensor-utils'
@@ -156,16 +156,16 @@ function App() {
 		train()
 	}
 
-	return (<div className="App">
+	return (<Container className="App">
 		<h3>ONNX Runtime Web Training Demo</h3>
-		<div>
+		<div className="section">
 			<TextField type="number"
 				label="Number of epochs"
 				value={numEpochs}
 				onChange={(e) => setNumEpochs(Number(e.target.value))}
 			/>
 		</div>
-		<div>
+		<div className="section">
 			<Button onClick={startTraining}
 				variant="contained">
 				Start training
@@ -186,7 +186,7 @@ function App() {
 			<p className='error'>
 				{errorMessage}
 			</p>}
-	</div>)
+	</Container>)
 }
 
 export default App;
