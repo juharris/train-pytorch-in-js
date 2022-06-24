@@ -46,9 +46,10 @@ gradient_graph_path = 'gradient_graph.onnx'
 batch_size = 32
 example_input = torch.randn(
     batch_size, input_size, requires_grad=True)
-# FIXME Maybe should be F.one_hot(torch.randint(0, num_classes, (batch_size,)), num_classes)
-example_labels = torch.tensor([1])
-
+example_labels = torch.randint(0, num_classes, (batch_size,))
+# Make sure that we understand how the labels should look.
+labels = model(example_input).argmax(dim=1)
+assert labels.shape == example_labels.shape
 
 print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(

@@ -45,7 +45,18 @@ You can train it in Python to get some good initial weights but that's not requi
 ## 1. Export the model's gradient and optimizer graphs
 We're going to create an ONNX graph that can compute gradients when given training data.
 
-You can follow along here or see the full example in [example.py](./export/example.py).
+You can follow along here or see the full example in [example.py](./export/example.py) or [mnist/example.py](./export/mnist/example.py).
+
+# MNIST Examples
+To export the MNIST example:
+```bash
+python -m mnist.example
+```
+
+To train the MNIST example to help verify the model:
+```bash
+python -m mnist.train
+```
 
 ### 1. Install some dependencies
 *I did this in Windows Subsystem for Linux (WSL).*
@@ -86,7 +97,8 @@ def binary_cross_entropy_loss(inp, target):
 loss_fn = binary_cross_entropy_loss
 
 input_size = 10
-model = MyModel(input_size=input_size, hidden_size=5, num_classes=2)
+num_classes = 2
+model = MyModel(input_size=input_size, hidden_size=5, num_classes=num_classes)
 
 # File path for where to save the ONNX graph.
 gradient_graph_path = 'gradient_graph.onnx'
@@ -96,7 +108,7 @@ gradient_graph_path = 'gradient_graph.onnx'
 batch_size = 32
 example_input = torch.randn(
 	batch_size, input_size, requires_grad=True)
-example_labels = torch.tensor([1])
+example_labels = torch.randint(0, num_classes, (batch_size,))
 
 export_gradient_graph(
 	model, loss_fn, example_input, example_labels, gradient_graph_path)

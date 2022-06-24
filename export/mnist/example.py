@@ -1,8 +1,8 @@
 import onnx
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
-
 from optim.adam import AdamOnnxGraphBuilder
+
 from .model import NUM_CLASSES, MnistNet, loss_fn
 
 # Batch sizes for training and testing
@@ -12,7 +12,6 @@ input_size = (28, 28)
 
 # How many batches before logging training status
 log_interval = 10
-
 
 model = MnistNet()
 
@@ -24,6 +23,9 @@ gradient_graph_path = 'mnist_gradient_graph.onnx'
 example_input = torch.randn(
     batch_size,1, input_size[0], input_size[1], requires_grad=True)
 example_labels = torch.randint(0, NUM_CLASSES, (batch_size,))
+# Make sure that we understand how the labels should look.
+labels = model(example_input).argmax(dim=1)
+assert labels.shape == example_labels.shape
 
 print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(
