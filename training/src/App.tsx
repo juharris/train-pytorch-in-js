@@ -1,7 +1,10 @@
 import { Button, Container, TextField } from '@mui/material'
 import React from 'react'
 import './App.css'
+import { MnistData } from './mnist'
 import { randomTensor, size } from './tensor-utils'
+
+// import mnist from 'mnist'
 
 function App() {
 	const [numEpochs, setNumEpochs] = React.useState<number>(20)
@@ -106,10 +109,16 @@ function App() {
 	}
 
 	async function train() {
-		const modelUrl = '/gradient_graph.onnx'
+		const modelPrefix = 'mnist_'
+		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
+		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
 		const session = await getSession(modelUrl)
 
 		// TODO Load data.
+		const mnist = new MnistData()
+		// const { trainingData, testData } = await mnist.load()
+		await mnist.load()
+		// const {trainingSet:training, testSet: test} = mnist.set(2000, 2000)
 		// Set up some sample data to try with our model.
 		const dataDimensions = 10
 		const batchSize = 1
@@ -117,6 +126,7 @@ function App() {
 		const data = randomTensor([batchSize, dataDimensions])
 		const labels = new ort.Tensor('int64', label, [batchSize])
 
+		// TODO Try to determine these dynamically.
 		let weights = {
 			'fc1.weight': randomTensor([5, 10]),
 			'fc1.bias': randomTensor([5]),
@@ -124,7 +134,6 @@ function App() {
 			'fc2.bias': randomTensor([2]),
 		}
 
-		const optimizerUrl = '/optimizer_graph.onnx'
 		const optimizerSession = await getSession(optimizerUrl)
 
 		let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
@@ -148,7 +157,10 @@ function App() {
 				break
 			}
 		}
-		showStatusMessage("Done training")
+
+		if (!errorMessage) {
+			showStatusMessage("Done training")
+		}
 	}
 
 	function startTraining() {
@@ -156,6 +168,10 @@ function App() {
 		setErrorMessage("")
 		train()
 	}
+
+	React.useEffect(() => {
+		startTraining()
+	}, [])
 
 	return (<Container className="App">
 		<h3>ONNX Runtime Web Training Demo</h3>

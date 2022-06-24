@@ -187,9 +187,16 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    # Get the declaration files.
    cp js/common/dist/lib/*.d.ts <your workspace>/FL/train-pytorch-in-js/training/src/ort
    ```
-   1. Copy your gradient graph to `training/public/gradient_graph.onnx`:
+   1. Copy some files to `training/public/`:
    ```bash
    cp *_graph.onnx training/public
+   ```
+
+   <!-- TODO Add better instructions to get the MNIST data. -->
+   ```bash
+   cd export
+   python -m mnist.train
+   cp -R ../data training/public/
    ```
    2. Go to the `training` folder:\
    `cd training`
