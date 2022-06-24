@@ -7,19 +7,19 @@ import torch.nn.functional as F
 NUM_CLASSES=10
 
 
-class MnistNet(nn.Module):
+# This model had issues exporting to an ONNX file.
+class MnistConvNet(nn.Module):
     def __init__(self, num_classes=NUM_CLASSES):
-        super(MnistNet, self).__init__()
-        # FIXME Use Linear layers since Conv2d isn't supported in ONNX.
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding='valid')
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3,
-                               stride=1, padding='valid')
+        super(MnistConvNet, self).__init__()
+        # We did have padding='valid' but ONNX doesn't support that.
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1)
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1)
         self.dropout1 = nn.Dropout(0.25)
-        self.fc1 = nn.Linear(9216, 128)
+        self.fc1 = nn.Linear(32*32*3*3, 128)
         self.dropout2 = nn.Dropout(0.5)
         self.fc2 = nn.Linear(128, num_classes)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
@@ -35,6 +35,25 @@ class MnistNet(nn.Module):
         return output
 
 
+class MnistNet(nn.Module):
+    """
+    A simple multi-layer perceptron model.
+    """
+    def __init__(self, hidden_size=128, num_classes=NUM_CLASSES):
+        super(MnistNet, self).__init__()
+        self.fc1 = torch.nn.Linear(28*28, hidden_size)
+        self.dropout1 = nn.Dropout(0.25)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x: torch.Tensor):
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout1(x)
+        x = self.fc2(x)
+        output = F.softmax(x, dim=1)
+        return output
 
 def cross_entropy(output, target):
     target = F.one_hot(target, NUM_CLASSES)

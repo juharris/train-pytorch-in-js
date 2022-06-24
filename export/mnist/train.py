@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 from torchvision import datasets, transforms
 
-from mnist.model import MnistNet, loss_fn
+from .model import MnistNet, loss_fn
 
 # Modified from https://kirenz.github.io/deep-learning/docs/mnist-pytorch.html
 
@@ -56,10 +56,11 @@ def start_training():
 
     # Batch sizes for training and testing
     batch_size = 64
-    test_batch_size = 14
+    test_batch_size = batch_size
 
     # Use -1 to train on all the data.
-    train_set_limit = 10000
+    train_set_limit = -1
+    # train_set_limit = 10000
     train_set_limit = math.floor(float(train_set_limit) / batch_size)
 
     # How many batches before logging training status

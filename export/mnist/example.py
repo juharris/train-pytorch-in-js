@@ -1,11 +1,9 @@
 import onnx
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from onnxruntime.training.experimental import export_gradient_graph
-from .model import NUM_CLASSES, MnistNet, loss_fn
 
 from optim.adam import AdamOnnxGraphBuilder
+from .model import NUM_CLASSES, MnistNet, loss_fn
 
 # Batch sizes for training and testing
 batch_size = 64
@@ -29,7 +27,7 @@ example_labels = torch.randint(0, NUM_CLASSES, (batch_size,))
 
 print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(
-    model, loss_fn, example_input, example_labels, gradient_graph_path, opset_version=15)
+    model, loss_fn, example_input, example_labels, gradient_graph_path)
 print(f"Done writing gradient graph to \"{gradient_graph_path}\".")
 
 print("Checking gradient graph...")
