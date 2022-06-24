@@ -6251,6 +6251,11 @@ mkdirp@^0.5.5, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
+mnist@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/mnist/-/mnist-1.1.0.tgz#b83efc6af88d8db53b196665acdb50cf524bd2ba"
+  integrity sha512-x+SfS5tSJnOEjad6jkuL91Cuq9EAVmy1IYt6vdWEsYCjJZsj0oB2xCq+sg5cgiEt9W+xBT31q9IwI2h7h1VtOw==
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"

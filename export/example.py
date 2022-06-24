@@ -1,9 +1,9 @@
-import numpy as np
 import onnx
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
 
 from optim.adam import AdamOnnxGraphBuilder
+
 
 # Let's use a simple example.
 class MyModel(torch.nn.Module):
@@ -27,15 +27,16 @@ class MyModel(torch.nn.Module):
 # You can still make the gradient graph with torch.nn.CrossEntropyLoss() and this test will pass.
 
 
-def binary_cross_entropy_loss(inp, target):
-    return -torch.sum(target * torch.log2(inp[:, 0]) +
-                      (1-target) * torch.log2(inp[:, 1]))
+def binary_cross_entropy_loss(output, target):
+    return -torch.sum(target * torch.log2(output[:, 0]) +
+                      (1-target) * torch.log2(output[:, 1]))
 
 
 loss_fn = binary_cross_entropy_loss
 
 input_size = 10
-model = MyModel(input_size=input_size, hidden_size=5, num_classes=2)
+num_classes=2
+model = MyModel(input_size=input_size, hidden_size=5, num_classes=num_classes)
 
 # We need a place to save the ONNX graph.
 gradient_graph_path = 'gradient_graph.onnx'
@@ -45,7 +46,9 @@ gradient_graph_path = 'gradient_graph.onnx'
 batch_size = 32
 example_input = torch.randn(
     batch_size, input_size, requires_grad=True)
+# FIXME Maybe should be F.one_hot(torch.randint(0, num_classes, (batch_size,)), num_classes)
 example_labels = torch.tensor([1])
+
 
 print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(

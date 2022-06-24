@@ -109,6 +109,7 @@ function App() {
 		const modelUrl = '/gradient_graph.onnx'
 		const session = await getSession(modelUrl)
 
+		// TODO Load data.
 		// Set up some sample data to try with our model.
 		const dataDimensions = 10
 		const batchSize = 1
