@@ -169,8 +169,18 @@ function App() {
 		train()
 	}
 
+	/**
+	 * Make sure data can load.
+	 */
+	async function loadData() {
+		const mnist = new MnistData()
+		// const { trainingData, testData } = await mnist.load()
+		await mnist.load()
+	}
+
 	React.useEffect(() => {
-		startTraining()
+		// startTraining()
+		loadData()
 	}, [])
 
 	return (<Container className="App">
