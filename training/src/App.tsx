@@ -114,51 +114,45 @@ function App() {
 		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
 		const session = await getSession(modelUrl)
 
-		// TODO Load data.
-		const mnist = new MnistData()
-		// const { trainingData, testData } = await mnist.load()
-		await mnist.load()
-		// const {trainingSet:training, testSet: test} = mnist.set(2000, 2000)
-		// Set up some sample data to try with our model.
-		const dataDimensions = 10
-		const batchSize = 1
-		const label = BigInt64Array.from([1n])
-		const data = randomTensor([batchSize, dataDimensions])
-		const labels = new ort.Tensor('int64', label, [batchSize])
+		const dataSet = new MnistData()
+		await dataSet.initialize()
 
 		// TODO Try to determine these dynamically.
-		let weights = {
-			'fc1.weight': randomTensor([5, 10]),
-			'fc1.bias': randomTensor([5]),
-			'fc2.weight': randomTensor([2, 5]),
-			'fc2.bias': randomTensor([2]),
+		const weights = {
+			'fc1.weight': randomTensor([128, 28 * 28]),
+			'fc1.bias': randomTensor([128]),
+			'fc2.weight': randomTensor([10, 128]),
+			'fc2.bias': randomTensor([10]),
 		}
 
 		const optimizerSession = await getSession(optimizerUrl)
 
 		let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 		showStatusMessage("Training...")
+		let success = true
 		for (let epoch = 1; epoch <= numEpochs; ++epoch) {
-			// TODO Loop over batches of data.
-			const feeds = {
-				input: data,
-				labels: labels,
-				...weights,
-			}
+			for (const batch of dataSet.trainingBatches()) {
+				const feeds = {
+					input: batch.data,
+					labels: batch.labels,
+					...weights,
+				}
 
-			try {
-				const runModelResults = await runModel(session, feeds)
-				const loss = runModelResults['loss'].data[0] as number
-				addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${loss.toFixed(4)}`)
-				prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
-			} catch (err) {
-				showErrorMessage(`Error in epoch ${epoch}: ${err}`)
-				console.error(err)
-				break
+				try {
+					const runModelResults = await runModel(session, feeds)
+					const loss = runModelResults['loss'].data[0] as number
+					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${loss.toFixed(4)}`)
+					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
+				} catch (err) {
+					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
+					console.error(err)
+					success = false
+					break
+				}
 			}
 		}
 
-		if (!errorMessage) {
+		if (success) {
 			showStatusMessage("Done training")
 		}
 	}
@@ -175,12 +169,12 @@ function App() {
 	async function loadData() {
 		const mnist = new MnistData()
 		// const { trainingData, testData } = await mnist.load()
-		await mnist.load()
+		await mnist.initialize()
 	}
 
 	React.useEffect(() => {
-		// startTraining()
-		loadData()
+		startTraining()
+		// loadData()
 	}, [])
 
 	return (<Container className="App">
