@@ -70,10 +70,14 @@ export class MnistData {
             shape.push(new DataView(buffer.slice(4 + i * 4, 8 + i * 4)).getUint32(0, false))
         }
         const numItems = shape[0]
+        console.debug("numItems:", numItems)
         // const numRows = shape[1]
         // const numColumns = shape[2]
 
-        const dataSize = shape.slice(1).reduce((a, b) => a * b, 1)
+        const dimensions = shape.slice(1)
+        const dataSize = dimensions.reduce((a, b) => a * b, 1)
+        console.debug("dimensions:", dimensions)
+        console.debug("dataSize:", dataSize)
 
         let batch: ort.Tensor[] = []
         result.push(batch)
@@ -82,16 +86,20 @@ export class MnistData {
             if (maxNumSamples > 0 && i > maxNumSamples) {
                 break
             }
-            offset += i * dataSize;
             let data
             // FIXME Group accumulated data into a batch.
             // Each batch should be an ort.Tensor of 'float32' for data and 'int64' for labels.
             switch (dataType) {
                 case 'data':
+                    // TODO Normalize like in the Python code.
+                    // data_mean = 0.1307
+                    // data_std = 0.3081
                     const image = new Uint8Array(buffer.slice(offset, offset + dataSize))
+                    data = new ort.Tensor('float32', new Float32Array(image), dimensions)
                     break
                 case 'labels':
                     const label = new Uint8Array(buffer.slice(offset, offset + 1))
+                    data = new ort.Tensor('int64', new BigInt64Array(Array.from(label).map(BigInt)))
                     break
             }
             batch.push(data)
@@ -99,6 +107,7 @@ export class MnistData {
                 batch = []
                 result.push(batch)
             }
+            offset += dataSize;
         }
         return result
     }

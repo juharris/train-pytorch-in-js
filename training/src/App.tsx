@@ -109,13 +109,20 @@ function App() {
 	}
 
 	async function train() {
+		const dataSet = new MnistData()
+		try {
+			showStatusMessage("Loading MNIST data...")
+			await dataSet.initialize()
+			showStatusMessage("Done loading MNIST data.")
+		} catch (err) {
+			showErrorMessage(`Error loading data: ${err}`)
+			throw err
+		}
+
 		const modelPrefix = 'mnist_'
 		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
 		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
 		const session = await getSession(modelUrl)
-
-		const dataSet = new MnistData()
-		await dataSet.initialize()
 
 		// TODO Try to determine these dynamically.
 		const weights = {
@@ -131,7 +138,10 @@ function App() {
 		showStatusMessage("Training...")
 		let success = true
 		for (let epoch = 1; epoch <= numEpochs; ++epoch) {
+			let batchNum = 0
 			for (const batch of dataSet.trainingBatches()) {
+				++batchNum
+				// console.debug(`batchNum: ${batchNum}`)
 				const feeds = {
 					input: batch.data,
 					labels: batch.labels,
@@ -141,6 +151,7 @@ function App() {
 				try {
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
+					// TODO Only show every few seconds.
 					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${loss.toFixed(4)}`)
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 				} catch (err) {
@@ -149,6 +160,9 @@ function App() {
 					success = false
 					break
 				}
+			}
+			if (!success) {
+				break
 			}
 		}
 

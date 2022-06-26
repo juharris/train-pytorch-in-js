@@ -13,7 +13,7 @@ input_size = (28, 28)
 # How many batches before logging training status
 log_interval = 10
 
-model = MnistNet()
+model = MnistNet(is_export_mode=True)
 
 # We need a place to save the ONNX graph.
 gradient_graph_path = 'mnist_gradient_graph.onnx'

@@ -39,10 +39,12 @@ class MnistNet(nn.Module):
     """
     A simple multi-layer perceptron model.
     """
-    def __init__(self, hidden_size=128, num_classes=NUM_CLASSES):
+    def __init__(self, is_export_mode=False, hidden_size=128, num_classes=NUM_CLASSES):
         super(MnistNet, self).__init__()
+        self.is_export_mode = is_export_mode
         self.fc1 = torch.nn.Linear(28*28, hidden_size)
-        self.dropout1 = nn.Dropout(0.25)
+        if not is_export_mode:
+            self.dropout1 = nn.Dropout(0.25)
         self.relu = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
@@ -50,7 +52,8 @@ class MnistNet(nn.Module):
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
-        x = self.dropout1(x)
+        if not self.is_export_mode:
+            x = self.dropout1(x)
         x = self.fc2(x)
         output = F.softmax(x, dim=1)
         return output
