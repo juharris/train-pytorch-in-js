@@ -7,6 +7,10 @@
  * Dataset description at https://deepai.org/dataset/mnist.
  */
 export class MnistData {
+	pixelMax = 255
+	pixelMean = 0.1307
+	pixelStd = 0.3081
+
 	constructor(
 		public batchSize = 64,
 		public maxNumTrainSamples = -1,
@@ -73,11 +77,8 @@ export class MnistData {
 			let batch
 			switch (dataType) {
 				case 'data':
-					// TODO Normalize like in the Python code.
-					// data_mean = 0.1307
-					// data_std = 0.3081
 					const image = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
-					batch = new Float32Array(image)
+					batch = (new Float32Array(image)).map(v => this.normalize(v))
 					batch = new ort.Tensor('float32', batch, batchShape)
 					break
 				case 'labels':
@@ -92,5 +93,9 @@ export class MnistData {
 		}
 
 		return result
+	}
+
+	private normalize(pixelValue: number): number {
+		return ((pixelValue / this.pixelMax) - this.pixelMean) / this.pixelStd
 	}
 }

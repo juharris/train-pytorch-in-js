@@ -143,6 +143,7 @@ function App() {
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
 					if (isNaN(loss)) {
+						console.debug("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
 						throw new Error(`Epoch ${epoch} | Batch ${batchNum} | Loss is NaN: ${loss}`)
 					}
