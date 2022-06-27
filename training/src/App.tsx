@@ -137,22 +137,24 @@ function App() {
 
 		let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 		showStatusMessage("Training...")
-		let success = true
 		let lastLogTime = Date.now()
-		for (let epoch = 1; epoch <= numEpochs; ++epoch) {
-			let batchNum = 0
-			for (const batch of dataSet.trainingBatches()) {
-				++batchNum
-				const feeds = {
-					input: batch.data,
-					labels: batch.labels,
-					...weights,
-				}
+		try {
+			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
+				let batchNum = 0
+				for (const batch of dataSet.trainingBatches()) {
+					++batchNum
+					const feeds = {
+						input: batch.data,
+						labels: batch.labels,
+						...weights,
+					}
 
-				try {
 					const runModelResults = await runModel(session, feeds)
-					// console.debug("runModelResults:", runModelResults)
 					const loss = runModelResults['loss'].data[0] as number
+					if (isNaN(loss)) {
+						console.warn("runModelResults:", runModelResults)
+						throw new Error(`Epoch ${epoch} | Batch ${batchNum} | Loss is NaN: ${loss}`)
+					}
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)} | Loss: ${loss.toFixed(4)}`
 						addMessage(message)
@@ -162,20 +164,14 @@ function App() {
 						await new Promise(resolve => setTimeout(resolve, 700))
 					}
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
-				} catch (err) {
-					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
-					console.error(err)
-					success = false
-					break
 				}
 			}
-			if (!success) {
-				break
-			}
-		}
 
-		if (success) {
+
 			showStatusMessage("Done training")
+		} catch (err) {
+			showErrorMessage(`Error while training: ${err}`)
+			console.error(err)
 		}
 	}
 
@@ -214,7 +210,7 @@ function App() {
 				<pre>
 					{messages.map((m, i) => (<React.Fragment key={i}>
 						{m}
-						<br/>
+						<br />
 					</React.Fragment>))}
 				</pre>
 			</div>}
