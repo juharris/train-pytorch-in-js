@@ -112,7 +112,8 @@ function App() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
 		// TODO Use all the data when we're done debugging.
-		dataSet.maxNumTrainSamples = 5000
+		// Loss goes to NaN when we use too much data.
+		dataSet.maxNumTrainSamples = 1000
 		dataSet.maxNumTestSamples = 1000
 
 		const modelPrefix = 'mnist_'
@@ -161,7 +162,7 @@ function App() {
 					if (isNaN(loss)) {
 						console.warn("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
-						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
+						throw new Error(`Training | Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
 					}
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
@@ -192,7 +193,7 @@ function App() {
 					if (isNaN(loss)) {
 						console.warn("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
-						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumTestBatches} | Loss = ${loss}`)
+						throw new Error(`Testing | Epoch ${epoch} | Batch ${batchNum}/${totalNumTestBatches} | Loss = ${loss}`)
 					}
 					totalTestLoss += loss
 
@@ -263,6 +264,7 @@ function App() {
 			</Button>
 		</div>
 		{/* TODO Add a button to stop training. */}
+		{/* TODO Show some digits and the predicted classes for after every few batches. */}
 		<p>{statusMessage}</p>
 		{messages.length > 0 &&
 			<div>
