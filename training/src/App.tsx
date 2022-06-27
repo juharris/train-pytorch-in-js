@@ -109,6 +109,7 @@ function App() {
 	}
 
 	async function train() {
+		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
 		try {
 			showStatusMessage("Loading MNIST data...")
@@ -137,11 +138,11 @@ function App() {
 		let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 		showStatusMessage("Training...")
 		let success = true
+		let lastLogTime = Date.now()
 		for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 			let batchNum = 0
 			for (const batch of dataSet.trainingBatches()) {
 				++batchNum
-				// console.debug(`batchNum: ${batchNum}`)
 				const feeds = {
 					input: batch.data,
 					labels: batch.labels,
@@ -151,8 +152,14 @@ function App() {
 				try {
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
-					// TODO Only show every few seconds.
-					addMessage(`Epoch: ${String(epoch).padStart(2, '0')}: Loss: ${loss.toFixed(4)}`)
+					if (Date.now() - lastLogTime > logIntervalMs) {
+						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)} | Loss: ${loss.toFixed(4)}`
+						addMessage(message)
+						console.debug(message)
+						lastLogTime = Date.now()
+						// Wait to give the UI a chance to update.
+						await new Promise(resolve => setTimeout(resolve, 700))
+					}
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 				} catch (err) {
 					showErrorMessage(`Error in epoch ${epoch}: ${err}`)
@@ -210,12 +217,12 @@ function App() {
 		{messages.length > 0 &&
 			<div>
 				<h4>Logs:</h4>
-				<div className="logs">
-					{messages.map((m, i) => (<div key={i}>
+				<pre>
+					{messages.map((m, i) => (<React.Fragment key={i}>
 						{m}
-						<br />
-					</div>))}
-				</div>
+						<br/>
+					</React.Fragment>))}
+				</pre>
 			</div>}
 		{errorMessage &&
 			<p className='error'>

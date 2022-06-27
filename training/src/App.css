@@ -9,7 +9,3 @@ div.section {
 p.error {
   color: red;
 }
-
-div.logs {
-  font-family: 'Courier New', Courier, monospace;
-}

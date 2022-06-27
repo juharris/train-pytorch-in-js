@@ -7,10 +7,10 @@
  * Dataset description at https://deepai.org/dataset/mnist.
  */
 export class MnistData {
-    trainingData?: ort.Tensor[][]
-    trainingLabels?: ort.Tensor[][]
-    testData?: ort.Tensor[][]
-    testLabels?: ort.Tensor[][]
+    trainingData?: ort.Tensor[]
+    trainingLabels?: ort.Tensor[]
+    testData?: ort.Tensor[]
+    testLabels?: ort.Tensor[]
 
     constructor(
         public batchSize = 64,
@@ -53,7 +53,7 @@ export class MnistData {
         }
     }
 
-    private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples = -1): Promise<ort.Tensor[][]> {
+    private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples = -1): Promise<ort.Tensor[]> {
         const result = []
         const response = await fetch(url)
         const buffer = await response.arrayBuffer()
@@ -70,45 +70,40 @@ export class MnistData {
             shape.push(new DataView(buffer.slice(4 + i * 4, 8 + i * 4)).getUint32(0, false))
         }
         const numItems = shape[0]
-        console.debug("numItems:", numItems)
-        // const numRows = shape[1]
-        // const numColumns = shape[2]
-
         const dimensions = shape.slice(1)
+        const batchShape: number[] = dataType === 'data' ? [this.batchSize, 1, ...dimensions] : [this.batchSize]
         const dataSize = dimensions.reduce((a, b) => a * b, 1)
-        console.debug("dimensions:", dimensions)
-        console.debug("dataSize:", dataSize)
 
-        let batch: ort.Tensor[] = []
-        result.push(batch)
         let offset = 4 + 4 * shape.length
-        for (let i = 0; i < numItems; ++i) {
+        for (let i = 0; i < numItems; i += this.batchSize) {
             if (maxNumSamples > 0 && i > maxNumSamples) {
                 break
             }
-            let data
-            // FIXME Group accumulated data into a batch.
-            // Each batch should be an ort.Tensor of 'float32' for data and 'int64' for labels.
+
+            if (buffer.byteLength < offset + this.batchSize * dataSize) {
+                break
+            }
+            let batch
             switch (dataType) {
                 case 'data':
                     // TODO Normalize like in the Python code.
                     // data_mean = 0.1307
                     // data_std = 0.3081
-                    const image = new Uint8Array(buffer.slice(offset, offset + dataSize))
-                    data = new ort.Tensor('float32', new Float32Array(image), dimensions)
+                    const image = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
+                    batch = new Float32Array(image)
+                    batch = new ort.Tensor('float32', batch, batchShape)
                     break
                 case 'labels':
-                    const label = new Uint8Array(buffer.slice(offset, offset + 1))
-                    data = new ort.Tensor('int64', new BigInt64Array(Array.from(label).map(BigInt)))
+                    const label = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
+                    batch = Array.from(label).map(BigInt)
+                    batch = new ort.Tensor('int64', new BigInt64Array(batch), batchShape)
                     break
             }
-            batch.push(data)
-            if (batch.length === this.batchSize) {
-                batch = []
-                result.push(batch)
-            }
-            offset += dataSize;
+
+            result.push(batch)
+            offset += this.batchSize * dataSize
         }
+
         return result
     }
 }
