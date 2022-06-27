@@ -71,7 +71,7 @@ function App() {
 		runModelResults: ort.InferenceSession.ReturnType,
 		weights: ort.InferenceSession.OnnxValueMapType,
 		prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined,
-		learningRate = 0.001,
+		learningRate = 0.01,
 	): Promise<ort.InferenceSession.ReturnType> {
 		const optimizerInputs: { [name: string]: ort.OnnxValue } = {}
 		for (const [name, tensor] of Object.entries(weights)) {
@@ -111,6 +111,10 @@ function App() {
 	async function train() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
+		// TODO Use all the data when we're done debugging.
+		dataSet.maxNumTrainSamples = 3000
+		dataSet.maxNumTestSamples = 1000
+
 		const modelPrefix = 'mnist_'
 		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
 		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
@@ -123,12 +127,18 @@ function App() {
 			'fc2.weight': randomTensor([10, 128]),
 			'fc2.bias': randomTensor([10]),
 		}
+		console.debug(weights)
 
 		const optimizerSession = await getSession(optimizerUrl)
 
 		let prevOptimizerOutput: ort.InferenceSession.ReturnType | undefined = undefined
 		showStatusMessage("Training...")
 		let lastLogTime = Date.now()
+		const totalNumBatches = dataSet.getNumTrainingBatches()
+		const totalNumTestBatches = dataSet.getNumTestBatches()
+
+		let learningRate = 0.05
+		const gamma = 0.7
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				let batchNum = 0
@@ -145,20 +155,53 @@ function App() {
 					if (isNaN(loss)) {
 						console.debug("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
-						throw new Error(`Epoch ${epoch} | Batch ${batchNum} | Loss = ${loss}`)
+						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
 					}
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)} | Loss: ${loss.toFixed(4)}`
+						console.debug("feeds", feeds)
+						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
 						addMessage(message)
 						// console.debug(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update.
-						await new Promise(resolve => setTimeout(resolve, 700))
+						await new Promise(resolve => setTimeout(resolve, 100))
 					}
-					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
+					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput, learningRate)
 				}
 
-				// TODO Use test data to evaluate.
+				learningRate *= gamma
+
+				let totalTestLoss = 0
+				batchNum = 0
+				for await (const batch of dataSet.testBatches()) {
+					++batchNum
+					const feeds = {
+						input: batch.data,
+						labels: batch.labels,
+						...weights,
+					}
+
+					const runModelResults = await runModel(session, feeds)
+					const loss = runModelResults['loss'].data[0] as number
+					if (isNaN(loss)) {
+						console.debug("feeds", feeds)
+						console.warn("runModelResults:", runModelResults)
+						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumTestBatches} | Loss = ${loss}`)
+					}
+					totalTestLoss += loss
+
+					if (Date.now() - lastLogTime > logIntervalMs) {
+						const message = `Testing | Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)}`
+						addMessage(message)
+						lastLogTime = Date.now()
+						// Wait to give the UI a chance to update.
+						await new Promise(resolve => setTimeout(resolve, 100))
+					}
+
+					// TODO Evaluate output
+					// runModelResults['output']
+				}
+				addMessage(`Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)}`)
 			}
 
 

@@ -78,6 +78,7 @@ def start_training():
     # Get CPU or GPU device for training
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     device = torch.device(device)
+    print(f"Training on {device}.")
 
     train_kwargs = {'batch_size': batch_size}
     test_kwargs = {'batch_size': test_batch_size}

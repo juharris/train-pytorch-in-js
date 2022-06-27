@@ -64,8 +64,13 @@ class MnistNet(nn.Module):
         if not self.is_export_mode:
             x = self.dropout1(x)
         x = self.fc2(x)
-        output = softmax(x, dim=1)
-        assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
+        # Hack to make sure the output is a probability distribution without using softmax.
+        # Reasons documented in the `softmax` method.
+        # Using that custom method gave NaN loss and NaNs in the output in ONNX Runtime Web.
+        output = F.sigmoid(x)
+        output = output / output.sum(dim=1, keepdim=True)
+        # output = softmax(x, dim=1)
+        # assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
         return output
 
 def softmax(x, dim):

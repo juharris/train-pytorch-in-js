@@ -7,18 +7,29 @@
  * Dataset description at https://deepai.org/dataset/mnist.
  */
 export class MnistData {
+	static MAX_NUM_TRAIN_SAMPLES = 60000
+	static MAX_NUM_TEST_SAMPLES = 10000
+
 	pixelMax = 255
 	pixelMean = 0.1307
 	pixelStd = 0.3081
 
 	constructor(
 		public batchSize = 64,
-		public maxNumTrainSamples = -1,
-		public maxNumTestSamples = -1,
+		public maxNumTrainSamples = MnistData.MAX_NUM_TRAIN_SAMPLES,
+		public maxNumTestSamples = MnistData.MAX_NUM_TEST_SAMPLES,
 	) {
 		if (batchSize <= 0) {
 			throw new Error("batchSize must be > 0")
 		}
+	}
+
+	public getNumTrainingBatches(): number {
+		return Math.floor(this.maxNumTrainSamples / this.batchSize)
+	}
+
+	public getNumTestBatches(): number {
+		return Math.floor(this.maxNumTestSamples / this.batchSize)
 	}
 
 	private *batches(data: ort.Tensor[], labels: ort.Tensor[]) {
@@ -44,7 +55,8 @@ export class MnistData {
 		yield* this.batches(testData, testLabels)
 	}
 
-	private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples = -1): Promise<ort.Tensor[]> {
+	private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples: number): Promise<ort.Tensor[]> {
+		console.debug(`Loading ${dataType} from "${url}".`)
 		const result = []
 		const response = await fetch(url)
 		const buffer = await response.arrayBuffer()
@@ -67,7 +79,7 @@ export class MnistData {
 
 		let offset = 4 + 4 * shape.length
 		for (let i = 0; i < numItems; i += this.batchSize) {
-			if (maxNumSamples > 0 && i > maxNumSamples) {
+			if (i + this.batchSize > maxNumSamples) {
 				break
 			}
 
