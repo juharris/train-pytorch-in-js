@@ -53,7 +53,7 @@ assert labels.shape == example_labels.shape
 
 print(f"Writing gradient graph to \"{gradient_graph_path}\".")
 export_gradient_graph(
-    model, loss_fn, example_input, example_labels, gradient_graph_path)
+    model, loss_fn, example_input, example_labels, gradient_graph_path, opset_version=15)
 print(f"Done writing gradient graph to \"{gradient_graph_path}\".")
 
 print("Checking gradient graph...")

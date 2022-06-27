@@ -49,12 +49,14 @@ class MnistNet(nn.Module):
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
     def forward(self, x: torch.Tensor):
+        # Flattening might be causing problems for ONNX Runtime Web, so we might need to try flatten in a pre-processing step.
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
         if not self.is_export_mode:
             x = self.dropout1(x)
         x = self.fc2(x)
+        # FIXME Don't use softmax because it doesn't work with ONNX Runtime Web.
         output = F.softmax(x, dim=1)
         return output
 

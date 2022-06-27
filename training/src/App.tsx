@@ -151,11 +151,12 @@ function App() {
 
 				try {
 					const runModelResults = await runModel(session, feeds)
+					// console.debug("runModelResults:", runModelResults)
 					const loss = runModelResults['loss'].data[0] as number
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)} | Loss: ${loss.toFixed(4)}`
 						addMessage(message)
-						console.debug(message)
+						// console.debug(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update.
 						await new Promise(resolve => setTimeout(resolve, 700))
@@ -184,18 +185,10 @@ function App() {
 		train()
 	}
 
-	/**
-	 * Make sure data can load.
-	 */
-	async function loadData() {
-		const mnist = new MnistData()
-		// const { trainingData, testData } = await mnist.load()
-		await mnist.initialize()
-	}
-
+	// Start training when the page loads.
+	// FIXME Resolve dependency warning.
 	React.useEffect(() => {
 		startTraining()
-		// loadData()
 	}, [])
 
 	return (<Container className="App">
@@ -213,6 +206,7 @@ function App() {
 				Start training
 			</Button>
 		</div>
+		{/* TODO Add a button to stop training. */}
 		<p>{statusMessage}</p>
 		{messages.length > 0 &&
 			<div>
