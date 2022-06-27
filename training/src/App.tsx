@@ -196,21 +196,20 @@ function App() {
 						throw new Error(`Testing | Epoch ${epoch} | Batch ${batchNum}/${totalNumTestBatches} | Loss = ${loss}`)
 					}
 					totalTestLoss += loss
+					numCorrect += getNumCorrect(runModelResults['output'], batch.labels)
+					total += batch.labels.dims[0]
 
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Testing | Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
+						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(100 * (numCorrect / total)).toFixed(1)}%)`
 						addMessage(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
 					}
-
-					numCorrect += getNumCorrect(runModelResults['output'], batch.labels)
-					total += batch.labels.dims[0]
 				}
 				addMessage(`Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`)
+				addMessage("")
 			}
-
 
 			showStatusMessage("Done training")
 		} catch (err) {
