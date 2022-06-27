@@ -111,15 +111,6 @@ function App() {
 	async function train() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
-		try {
-			showStatusMessage("Loading MNIST data...")
-			await dataSet.initialize()
-			showStatusMessage("Done loading MNIST data.")
-		} catch (err) {
-			showErrorMessage(`Error loading data: ${err}`)
-			throw err
-		}
-
 		const modelPrefix = 'mnist_'
 		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
 		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
@@ -141,7 +132,7 @@ function App() {
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				let batchNum = 0
-				for (const batch of dataSet.trainingBatches()) {
+				for await (const batch of dataSet.trainingBatches()) {
 					++batchNum
 					const feeds = {
 						input: batch.data,
@@ -165,6 +156,8 @@ function App() {
 					}
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput)
 				}
+
+				// TODO Use test data to evaluate.
 			}
 
 
