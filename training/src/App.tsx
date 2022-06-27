@@ -2,12 +2,12 @@ import { Button, Container, TextField } from '@mui/material'
 import React from 'react'
 import './App.css'
 import { MnistData } from './mnist'
-import { randomTensor, size } from './tensor-utils'
-
-// import mnist from 'mnist'
+import { getNumCorrect, randomTensor, size } from './tensor-utils'
 
 function App() {
-	const [numEpochs, setNumEpochs] = React.useState<number>(20)
+	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(0.001)
+	const [gamma, setGamma] = React.useState<number>(0.7)
+	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -112,7 +112,7 @@ function App() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
 		// TODO Use all the data when we're done debugging.
-		dataSet.maxNumTrainSamples = 3000
+		dataSet.maxNumTrainSamples = 5000
 		dataSet.maxNumTestSamples = 1000
 
 		const modelPrefix = 'mnist_'
@@ -121,13 +121,18 @@ function App() {
 		const session = await getSession(modelUrl)
 
 		// TODO Try to determine these dynamically.
+		const inputSize = 28 * 28
+		const hiddenSize = 128
+		const numClasses = 10
+
+		// Initialize weight using distributions explained at https://pytorch.org/docs/stable/generated/torch.nn.Linear.html?highlight=linear#torch.nn.Linear.
 		const weights = {
-			'fc1.weight': randomTensor([128, 28 * 28]),
-			'fc1.bias': randomTensor([128]),
-			'fc2.weight': randomTensor([10, 128]),
-			'fc2.bias': randomTensor([10]),
+			'fc1.weight': randomTensor([hiddenSize, inputSize], -Math.sqrt(1 / inputSize), Math.sqrt(1 / inputSize)),
+			'fc1.bias': randomTensor([hiddenSize], -Math.sqrt(1 / inputSize), Math.sqrt(1 / inputSize)),
+			'fc2.weight': randomTensor([numClasses, hiddenSize], -Math.sqrt(1 / hiddenSize), Math.sqrt(1 / hiddenSize)),
+			'fc2.bias': randomTensor([numClasses], -Math.sqrt(1 / hiddenSize), Math.sqrt(1 / hiddenSize)),
 		}
-		console.debug(weights)
+		console.debug("weights", weights)
 
 		const optimizerSession = await getSession(optimizerUrl)
 
@@ -137,8 +142,9 @@ function App() {
 		const totalNumBatches = dataSet.getNumTrainingBatches()
 		const totalNumTestBatches = dataSet.getNumTestBatches()
 
-		let learningRate = 0.05
-		const gamma = 0.7
+		const waitAfterLoggingMs = 120
+
+		let learningRate = initialLearningRate
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				let batchNum = 0
@@ -153,18 +159,16 @@ function App() {
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
 					if (isNaN(loss)) {
-						console.debug("feeds", feeds)
+						console.warn("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
 						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
 					}
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						console.debug("feeds", feeds)
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
 						addMessage(message)
-						// console.debug(message)
 						lastLogTime = Date.now()
-						// Wait to give the UI a chance to update.
-						await new Promise(resolve => setTimeout(resolve, 100))
+						// Wait to give the UI a chance to update and respond to inputs.
+						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
 					}
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput, learningRate)
 				}
@@ -173,6 +177,8 @@ function App() {
 
 				let totalTestLoss = 0
 				batchNum = 0
+				let numCorrect = 0
+				let total = 0
 				for await (const batch of dataSet.testBatches()) {
 					++batchNum
 					const feeds = {
@@ -184,24 +190,24 @@ function App() {
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
 					if (isNaN(loss)) {
-						console.debug("feeds", feeds)
+						console.warn("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
 						throw new Error(`Epoch ${epoch} | Batch ${batchNum}/${totalNumTestBatches} | Loss = ${loss}`)
 					}
 					totalTestLoss += loss
 
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Testing | Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)}`
+						const message = `Testing | Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
 						addMessage(message)
 						lastLogTime = Date.now()
-						// Wait to give the UI a chance to update.
-						await new Promise(resolve => setTimeout(resolve, 100))
+						// Wait to give the UI a chance to update and respond to inputs.
+						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
 					}
 
-					// TODO Evaluate output
-					// runModelResults['output']
+					numCorrect += getNumCorrect(runModelResults['output'], batch.labels)
+					total += batch.labels.dims[0]
 				}
-				addMessage(`Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)}`)
+				addMessage(`Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`)
 			}
 
 
@@ -219,13 +225,30 @@ function App() {
 	}
 
 	// Start training when the page loads.
-	// FIXME Resolve dependency warning.
+	// FIXME Resolve dependency warning or remove this when we're done debugging.
 	React.useEffect(() => {
 		startTraining()
 	}, [])
 
 	return (<Container className="App">
 		<h3>ONNX Runtime Web Training Demo</h3>
+		<div className="section">
+			<TextField type="number"
+				label="Initial Learning Rate"
+				value={initialLearningRate}
+				onChange={(e) => setInitialLearningRate(Number(e.target.value))}
+			/>
+		</div>
+		<div className="section">
+			<p>
+				After each epoch, the learning rate will be multiplied by <code>gamma</code>.
+			</p>
+			<TextField type="number"
+				label="Gamma"
+				value={gamma}
+				onChange={(e) => setGamma(Number(e.target.value))}
+			/>
+		</div>
 		<div className="section">
 			<TextField type="number"
 				label="Number of epochs"
