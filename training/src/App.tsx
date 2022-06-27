@@ -145,7 +145,7 @@ function App() {
 					if (isNaN(loss)) {
 						console.debug("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
-						throw new Error(`Epoch ${epoch} | Batch ${batchNum} | Loss is NaN: ${loss}`)
+						throw new Error(`Epoch ${epoch} | Batch ${batchNum} | Loss = ${loss}`)
 					}
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)} | Loss: ${loss.toFixed(4)}`

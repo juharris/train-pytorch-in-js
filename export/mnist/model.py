@@ -38,7 +38,8 @@ class MnistConvNet(nn.Module):
         if not self.is_export_mode:
             x = self.dropout2(x)
         x = self.fc2(x)
-        output = F.softmax(x, dim=1)
+        output = softmax(x,dim=1)
+        assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
         return output
 
 
@@ -63,9 +64,22 @@ class MnistNet(nn.Module):
         if not self.is_export_mode:
             x = self.dropout1(x)
         x = self.fc2(x)
-        # FIXME Don't use softmax because it doesn't work with ONNX Runtime Web.
-        output = F.softmax(x, dim=1)
+        output = softmax(x, dim=1)
+        assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
         return output
+
+def softmax(x, dim):
+    # Don't use the built-in softmax because it doesn't work with ONNX Runtime Web.
+    # [W:onnxruntime:, graph.cc:2624 InitFunctionBodyForNode] Function body initialization failed for node 'Softmax_4_Grad/SoftmaxGrad_0' optype SoftmaxGrad. Error message /home/juharri/workspace/onnx/onnxruntime/onnxruntime/core/graph/function.cc:788 onnxruntime::FunctionImpl::FunctionImpl(onnxruntime::Graph &, const onnxruntime::NodeIndex &, const onnx::FunctionProto &, const std::unordered_map<std::string, const onnx::FunctionProto *> &, std::vector<std::unique_ptr<onnxruntime::Function>> &, const logging::Logger &, bool) status.IsOK() was false. Resolve subgraph failed:This is an invalid model. In Node, ("0xbc2a58", Squeeze, "", -1) : ("n_as_vector": tensor(int64),"axis_zero": tensor(int64),) -> ("n",) , Error Node (0xbc2a58) has input size 2 not in range [min=1, max=1].
+
+    # Can't use the -max trick for stability because we get an error when exporting the gradient graph.
+    # RuntimeError: /onnxruntime_src/orttraining/orttraining/core/graph/gradient_builder_registry.cc:29 onnxruntime::training::GradientDef onnxruntime::training::GetGradientForOp(const onnxruntime::training::GradientGraphConfiguration&, onnxruntime::Graph*, const onnxruntime::Node*, const std::unordered_set<std::basic_string<char> >&, const std::unordered_set<std::basic_string<char> >&, const onnxruntime::logging::Logger&, std::unordered_set<std::basic_string<char> >&) gradient_builder != nullptr was false. The gradient builder has not been registered: ReduceMax for node ReduceMax_4
+    # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
+    output = x.exp()
+    output = output / output.sum(dim=dim, keepdim=True)
+    return output
+    
+# x = torch.randn(1, 1, 28, 28)
 
 def cross_entropy(output, target):
     target = F.one_hot(target, NUM_CLASSES)

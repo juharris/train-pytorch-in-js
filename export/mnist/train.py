@@ -15,8 +15,10 @@ from .model import MnistNet, loss_fn
 
 def train(model, device, train_loader, optimizer, epoch, log_interval, train_set_limit=-1):
     model.train()
-    train_loader = train_loader if train_set_limit < 0 else itertools.islice(train_loader, train_set_limit)
-    train_set_limit = len(train_loader) if train_set_limit < 0 else train_set_limit
+    if train_set_limit < 0:
+        train_set_limit = len(train_loader)
+    else:
+        train_loader = itertools.islice(train_loader, train_set_limit)
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
