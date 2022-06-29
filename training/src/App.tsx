@@ -195,6 +195,7 @@ function App() {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				updateDigitPredictions(session, weights)
 
+				// Train
 				let batchNum = 0
 				for await (const batch of dataSet.trainingBatches()) {
 					++batchNum
@@ -225,6 +226,7 @@ function App() {
 
 				learningRate *= gamma
 
+				// Test
 				let totalTestLoss = 0
 				batchNum = 0
 				let numCorrect = 0
@@ -290,6 +292,7 @@ function App() {
 	function startTraining() {
 		setDigitPredictions([])
 		setMessages([])
+		setStatusMessage("")
 		setErrorMessage("")
 		train()
 	}
