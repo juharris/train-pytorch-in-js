@@ -5,8 +5,8 @@ import { MnistData } from './mnist'
 import { getNumCorrect, randomTensor, size } from './tensor-utils'
 
 function App() {
-	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(1)
-	const [gamma, setGamma] = React.useState<number>(0.7)
+	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(3e-4)
+	const [gamma, setGamma] = React.useState<number>(1.0)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
@@ -112,8 +112,7 @@ function App() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
 		// TODO Use all the data when we're done debugging.
-		// Loss goes to NaN when we use too much data.
-		dataSet.maxNumTrainSamples = 1000
+		dataSet.maxNumTrainSamples = 10000
 		dataSet.maxNumTestSamples = 1000
 
 		const modelPrefix = 'mnist_'
@@ -126,7 +125,7 @@ function App() {
 		const hiddenSize = 128
 		const numClasses = 10
 
-		// Initialize weight using distributions explained at https://pytorch.org/docs/stable/generated/torch.nn.Linear.html?highlight=linear#torch.nn.Linear.
+		// Initialize weight using distributions explained at https://pytorch.org/docs/stable/generated/torch.nn.Linear.html.
 		const weights = {
 			'fc1.weight': randomTensor([hiddenSize, inputSize], -Math.sqrt(1 / inputSize), Math.sqrt(1 / inputSize)),
 			'fc1.bias': randomTensor([hiddenSize], -Math.sqrt(1 / inputSize), Math.sqrt(1 / inputSize)),
@@ -167,6 +166,7 @@ function App() {
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
 						addMessage(message)
+						setStatusMessage(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
@@ -200,8 +200,9 @@ function App() {
 					total += batch.labels.dims[0]
 
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(100 * (numCorrect / total)).toFixed(1)}%)`
+						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Test Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(100 * (numCorrect / total)).toFixed(1)}%)`
 						addMessage(message)
+						setStatusMessage(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
@@ -264,7 +265,7 @@ function App() {
 		</div>
 		{/* TODO Add a button to stop training. */}
 		{/* TODO Show some digits and the predicted classes for after every few batches. */}
-		<p>{statusMessage}</p>
+		<pre>{statusMessage}</pre>
 		{messages.length > 0 &&
 			<div>
 				<h4>Logs:</h4>
