@@ -47,9 +47,11 @@ class MnistNet(nn.Module):
     """
     A simple multi-layer perceptron model.
     """
-    def __init__(self, is_export_mode=False, hidden_size=128, num_classes=NUM_CLASSES):
+    def __init__(self, is_export_mode=False, hidden_size=128, num_classes=NUM_CLASSES, data_mean=0.1307, data_std=0.3081):
         super(MnistNet, self).__init__()
         self.is_export_mode = is_export_mode
+        self.data_mean = data_mean
+        self.data_std = data_std
         self.fc1 = torch.nn.Linear(28*28, hidden_size)
         if not is_export_mode:
             self.dropout1 = nn.Dropout(0.25)
@@ -57,32 +59,28 @@ class MnistNet(nn.Module):
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
     def forward(self, x: torch.Tensor):
-        # Flattening might be causing problems for ONNX Runtime Web, so we might need to try flatten in a pre-processing step.
         x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = F.relu(x)
         if not self.is_export_mode:
             x = self.dropout1(x)
         x = self.fc2(x)
-        # Hack to make sure the output is a probability distribution without using softmax.
-        # Reasons documented in the `softmax` method.
-        # Using that custom method gave NaN loss and NaNs in the output in ONNX Runtime Web.
-        output = torch.sigmoid(x)
-        output = output / output.sum(dim=1, keepdim=True)
-        # output = softmax(x, dim=1)
-        # assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
+        output = self.softmax(x, dim=1)
+        if not self.is_export_mode:
+            assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
         return output
 
-def softmax(x, dim):
-    # Don't use the built-in softmax because it doesn't work with ONNX Runtime Web.
-    # [W:onnxruntime:, graph.cc:2624 InitFunctionBodyForNode] Function body initialization failed for node 'Softmax_4_Grad/SoftmaxGrad_0' optype SoftmaxGrad. Error message /home/juharri/workspace/onnx/onnxruntime/onnxruntime/core/graph/function.cc:788 onnxruntime::FunctionImpl::FunctionImpl(onnxruntime::Graph &, const onnxruntime::NodeIndex &, const onnx::FunctionProto &, const std::unordered_map<std::string, const onnx::FunctionProto *> &, std::vector<std::unique_ptr<onnxruntime::Function>> &, const logging::Logger &, bool) status.IsOK() was false. Resolve subgraph failed:This is an invalid model. In Node, ("0xbc2a58", Squeeze, "", -1) : ("n_as_vector": tensor(int64),"axis_zero": tensor(int64),) -> ("n",) , Error Node (0xbc2a58) has input size 2 not in range [min=1, max=1].
+    def softmax(self, x, dim):
+        # Don't use the built-in softmax because it doesn't work with ONNX Runtime Web.
+        # [W:onnxruntime:, graph.cc:2624 InitFunctionBodyForNode] Function body initialization failed for node 'Softmax_4_Grad/SoftmaxGrad_0' optype SoftmaxGrad. Error message /home/juharri/workspace/onnx/onnxruntime/onnxruntime/core/graph/function.cc:788 onnxruntime::FunctionImpl::FunctionImpl(onnxruntime::Graph &, const onnxruntime::NodeIndex &, const onnx::FunctionProto &, const std::unordered_map<std::string, const onnx::FunctionProto *> &, std::vector<std::unique_ptr<onnxruntime::Function>> &, const logging::Logger &, bool) status.IsOK() was false. Resolve subgraph failed:This is an invalid model. In Node, ("0xbc2a58", Squeeze, "", -1) : ("n_as_vector": tensor(int64),"axis_zero": tensor(int64),) -> ("n",) , Error Node (0xbc2a58) has input size 2 not in range [min=1, max=1].
 
-    # Can't use the -max trick for stability because we get an error when exporting the gradient graph.
-    # RuntimeError: /onnxruntime_src/orttraining/orttraining/core/graph/gradient_builder_registry.cc:29 onnxruntime::training::GradientDef onnxruntime::training::GetGradientForOp(const onnxruntime::training::GradientGraphConfiguration&, onnxruntime::Graph*, const onnxruntime::Node*, const std::unordered_set<std::basic_string<char> >&, const std::unordered_set<std::basic_string<char> >&, const onnxruntime::logging::Logger&, std::unordered_set<std::basic_string<char> >&) gradient_builder != nullptr was false. The gradient builder has not been registered: ReduceMax for node ReduceMax_4
-    # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
-    output = torch.exp(x)
-    output = output / output.sum(dim=dim, keepdim=True)
-    return output
+        # Can't use the -max trick for stability because we get an error when exporting the gradient graph.
+        # RuntimeError: /onnxruntime_src/orttraining/orttraining/core/graph/gradient_builder_registry.cc:29 onnxruntime::training::GradientDef onnxruntime::training::GetGradientForOp(const onnxruntime::training::GradientGraphConfiguration&, onnxruntime::Graph*, const onnxruntime::Node*, const std::unordered_set<std::basic_string<char> >&, const std::unordered_set<std::basic_string<char> >&, const onnxruntime::logging::Logger&, std::unordered_set<std::basic_string<char> >&) gradient_builder != nullptr was false. The gradient builder has not been registered: ReduceMax for node ReduceMax_4
+        # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
+        # Offset by the max possible value to avoid overflow.
+        output = torch.exp(x - (1 - self.data_mean) / self.data_std)
+        output = output / output.sum(dim=dim, keepdim=True)
+        return output
     
 # x = torch.randn(1, 1, 28, 28)
 

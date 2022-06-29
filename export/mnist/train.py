@@ -70,10 +70,7 @@ def start_training():
 
     n_epochs = 2
 
-    learning_rate = 1.0
-
-    # Decay rate for adjusting the learning rate
-    gamma = 0.7
+    learning_rate = 3e-4
 
     # Get CPU or GPU device for training
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -110,18 +107,15 @@ def start_training():
     # Define the data loaders that will handle fetching of data
     train_loader = torch.utils.data.DataLoader(training_data, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(test_data, **test_kwargs)
-    model = MnistNet().to(device)
+    model = MnistNet(data_mean=data_mean, data_std=data_std).to(device)
 
     # Define the optimizer to user for gradient descent
-    optimizer = optim.Adadelta(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
-    # Shrinks the learning rate by gamma every step_size
-    scheduler = ExponentialLR(optimizer, gamma=gamma)
     for epoch in range(1, n_epochs + 1):
         train(model, device, train_loader, optimizer,
               epoch, log_interval, train_set_limit)
         test(model, device, test_loader)
-        scheduler.step()
 
 
 if __name__ == '__main__':
