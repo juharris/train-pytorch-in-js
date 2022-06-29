@@ -191,6 +191,7 @@ function App() {
 		const waitAfterLoggingMs = 120
 
 		let learningRate = initialLearningRate
+		let lastTestAccuracy = 0
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				updateDigitPredictions(session, weights)
@@ -260,14 +261,19 @@ function App() {
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
 					}
 				}
-				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
+				lastTestAccuracy = numCorrect / total
+				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (lastTestAccuracy) : 0).toFixed(1)}%)`
 				console.log(message)
 				setStatusMessage(message)
 				addMessage(message)
 				addMessage("")
 			}
 
-			showStatusMessage("Done training")
+			let message = "Done training"
+			if (lastTestAccuracy) {
+				message += ` | Accuracy: ${(100 * lastTestAccuracy).toFixed(1)}%`
+			}
+			showStatusMessage(message)
 		} catch (err) {
 			showErrorMessage(`Error while training: ${err}`)
 			console.error(err)
@@ -380,7 +386,7 @@ function App() {
 				Start training
 			</Button>
 		</div>
-		{/* TODO Add a button to stop training. */}
+		{/* TODO Add a button to stop training. How would it work? */}
 
 		{renderDigits()}
 

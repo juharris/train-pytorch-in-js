@@ -9,3 +9,8 @@ div.section {
 p.error {
   color: red;
 }
+
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
