@@ -1,6 +1,7 @@
 import { Button, Container, Grid, TextField } from '@mui/material'
 import React from 'react'
 import './App.css'
+import { Digit } from './components/Digit'
 import { MnistData } from './mnist'
 import { getNumCorrect, randomTensor, size } from './tensor-utils'
 
@@ -10,9 +11,12 @@ function App() {
 	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(10000)
 	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(1000)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
-	const [messages, setMessages] = React.useState<string[]>([])
+
+	const [digits, setDigits] = React.useState<{ pixels: number[][], label: number }[]>([])
+
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
+	const [messages, setMessages] = React.useState<string[]>([])
 
 	function showStatusMessage(message: string) {
 		console.log(message)
@@ -122,6 +126,7 @@ function App() {
 		const session = await getSession(modelUrl)
 
 		// TODO Try to determine these dynamically.
+		// There doesn't seem to be a way from the model to get this information.
 		const inputSize = 28 * 28
 		const hiddenSize = 128
 		const numClasses = 10
@@ -224,23 +229,72 @@ function App() {
 		}
 	}
 
+	function renderDigits() {
+		return (<div className="section">
+			<h4>Test Digits</h4>
+			<Grid container spacing={2}>
+				{digits.map((digit, i) => {
+					const { pixels, label } = digit
+					return (<Grid key={i} item xs={12} md={6}>
+						<Digit pixels={pixels} label={label} />
+						{/* TODO Show prediction. */}
+					</Grid>)
+				})}
+			</Grid>
+		</div>)
+	}
+
 	function startTraining() {
 		setMessages([])
 		setErrorMessage("")
 		train()
 	}
 
+	async function loadDigits() {
+		const maxNumDigits = 10
+		const seenLabels = new Set()
+		const dataSet = new MnistData()
+		dataSet.maxNumTestSamples = dataSet.batchSize
+		const digits = []
+		const normalize = false
+		for await (const testBatch of dataSet.testBatches(normalize)) {
+			const { data, labels } = testBatch
+			const numRows = data.dims[2]
+			const numCols = data.dims[3]
+			for (let i = 0; digits.length < maxNumDigits && i < labels.dims[0]; ++i) {
+				const pixels: number[][] = []
+				const label = Number(labels.data[i])
+				if (seenLabels.has(label)) {
+					continue
+				}
+				seenLabels.add(label)
+
+				for (let row = 0; row < numRows; ++row) {
+					const rowPixels: number[] = []
+					for (let col = 0; col < numCols; ++col) {
+						rowPixels.push((data.data as Float32Array)[i * numRows * numCols + row * numCols + col])
+					}
+					pixels.push(rowPixels)
+				}
+
+				digits.push({ pixels, label })
+			}
+		}
+		setDigits(digits)
+	}
+
 	// Start training when the page loads.
 	// FIXME Resolve dependency warning or remove this when we're done debugging.
 	React.useEffect(() => {
-		// startTraining()
+		// Load digits to display.
+		loadDigits()
 	}, [])
 
 	return (<Container className="App">
 		<h3>ONNX Runtime Web Training Demo</h3>
 		<div className="section">
 			<p>
-				After each epoch, the learning rate will be multiplied by <code>gamma</code>.
+				After each epoch, the learning rate will be multiplied by <code>Gamma</code>.
 			</p>
 			<Grid container spacing={{ xs: 1, md: 2 }}>
 				<Grid item xs={12} md={4} >
@@ -292,6 +346,7 @@ function App() {
 		</div>
 		{/* TODO Add a button to stop training. */}
 		{/* TODO Show some digits and the predicted classes for after every few batches. */}
+		{renderDigits()}
 		<pre>{statusMessage}</pre>
 		{messages.length > 0 &&
 			<div>

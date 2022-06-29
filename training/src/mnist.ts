@@ -48,14 +48,14 @@ export class MnistData {
 		yield* this.batches(trainingData, trainingLabels)
 	}
 
-	public async * testBatches() {
+	public async * testBatches(normalize = true) {
 		// Avoid keeping data in memory.
-		const testData = await this.getData('/data/MNIST/raw/t10k-images-idx3-ubyte', 2051, 'data', this.maxNumTestSamples)
+		const testData = await this.getData('/data/MNIST/raw/t10k-images-idx3-ubyte', 2051, 'data', this.maxNumTestSamples, normalize)
 		const testLabels = await this.getData('/data/MNIST/raw/t10k-labels-idx1-ubyte', 2049, 'labels', this.maxNumTestSamples)
 		yield* this.batches(testData, testLabels)
 	}
 
-	private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples: number): Promise<ort.Tensor[]> {
+	private async getData(url: string, expectedMagicNumber: number, dataType: 'data' | 'labels', maxNumSamples: number, normalize = true): Promise<ort.Tensor[]> {
 		console.debug(`Loading ${dataType} from "${url}".`)
 		const result = []
 		const response = await fetch(url)
@@ -90,7 +90,10 @@ export class MnistData {
 			switch (dataType) {
 				case 'data':
 					const image = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
-					batch = (new Float32Array(image)).map(v => this.normalize(v))
+					batch = (new Float32Array(image))
+					if (normalize) {
+						batch = batch.map(v => this.normalize(v))
+					}
 					batch = new ort.Tensor('float32', batch, batchShape)
 					break
 				case 'labels':
