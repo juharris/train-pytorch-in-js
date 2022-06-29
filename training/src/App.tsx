@@ -5,7 +5,7 @@ import { MnistData } from './mnist'
 import { getNumCorrect, randomTensor, size } from './tensor-utils'
 
 function App() {
-	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(0.001)
+	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(1)
 	const [gamma, setGamma] = React.useState<number>(0.7)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 	const [messages, setMessages] = React.useState<string[]>([])

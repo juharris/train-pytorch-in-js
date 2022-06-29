@@ -62,7 +62,7 @@ def start_training():
 
     # Use -1 to train on all the data.
     train_set_limit = -1
-    # train_set_limit = 10000
+    # train_set_limit = 1000
     train_set_limit = math.floor(float(train_set_limit) / batch_size)
 
     # How many batches before logging training status

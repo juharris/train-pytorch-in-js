@@ -67,7 +67,7 @@ class MnistNet(nn.Module):
         # Hack to make sure the output is a probability distribution without using softmax.
         # Reasons documented in the `softmax` method.
         # Using that custom method gave NaN loss and NaNs in the output in ONNX Runtime Web.
-        output = F.sigmoid(x)
+        output = torch.sigmoid(x)
         output = output / output.sum(dim=1, keepdim=True)
         # output = softmax(x, dim=1)
         # assert output.allclose(F.softmax(x, dim=1)), "The output was not similar to the PyTorch softmax."
@@ -80,7 +80,7 @@ def softmax(x, dim):
     # Can't use the -max trick for stability because we get an error when exporting the gradient graph.
     # RuntimeError: /onnxruntime_src/orttraining/orttraining/core/graph/gradient_builder_registry.cc:29 onnxruntime::training::GradientDef onnxruntime::training::GetGradientForOp(const onnxruntime::training::GradientGraphConfiguration&, onnxruntime::Graph*, const onnxruntime::Node*, const std::unordered_set<std::basic_string<char> >&, const std::unordered_set<std::basic_string<char> >&, const onnxruntime::logging::Logger&, std::unordered_set<std::basic_string<char> >&) gradient_builder != nullptr was false. The gradient builder has not been registered: ReduceMax for node ReduceMax_4
     # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
-    output = x.exp()
+    output = torch.exp(x)
     output = output / output.sum(dim=dim, keepdim=True)
     return output
     
@@ -88,8 +88,8 @@ def softmax(x, dim):
 
 def cross_entropy(output, target):
     target = F.one_hot(target, NUM_CLASSES)
-    # TODO Check if this is right, it ignore the target=0, `torch.log(1 - output)` case, but with it, loss became NaN.
-    return - torch.sum(target*torch.log(output)) / target.size(0)
+    # Normally you do torch.log(output) and torch.log(1 - output) but that gives NaN.
+    return - torch.sum(target*output + (1-target)*(1-output)) / target.size(0)
 
 
 # Original was:
