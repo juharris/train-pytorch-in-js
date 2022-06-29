@@ -1,4 +1,4 @@
-import { Button, Container, TextField } from '@mui/material'
+import { Button, Container, Grid, TextField } from '@mui/material'
 import React from 'react'
 import './App.css'
 import { MnistData } from './mnist'
@@ -7,6 +7,8 @@ import { getNumCorrect, randomTensor, size } from './tensor-utils'
 function App() {
 	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(3e-4)
 	const [gamma, setGamma] = React.useState<number>(1.0)
+	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(10000)
+	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(1000)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 	const [messages, setMessages] = React.useState<string[]>([])
 	const [statusMessage, setStatusMessage] = React.useState("")
@@ -111,9 +113,8 @@ function App() {
 	async function train() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
-		// TODO Use all the data when we're done debugging.
-		dataSet.maxNumTrainSamples = 10000
-		dataSet.maxNumTestSamples = 1000
+		dataSet.maxNumTrainSamples = maxNumTrainSamples
+		dataSet.maxNumTestSamples = maxNumTestSamples
 
 		const modelPrefix = 'mnist_'
 		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
@@ -163,10 +164,10 @@ function App() {
 						console.warn("runModelResults:", runModelResults)
 						throw new Error(`Training | Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
 					}
+					const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
+					console.debug(message)
+					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
-						addMessage(message)
-						setStatusMessage(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
@@ -199,16 +200,20 @@ function App() {
 					numCorrect += getNumCorrect(runModelResults['output'], batch.labels)
 					total += batch.labels.dims[0]
 
+					const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Test Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(100 * (numCorrect / total)).toFixed(1)}%)`
+					console.debug(message)
+					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
-						const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Test Batch: ${String(batchNum).padStart(3)}/${totalNumTestBatches} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(100 * (numCorrect / total)).toFixed(1)}%)`
-						addMessage(message)
 						setStatusMessage(message)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
 					}
 				}
-				addMessage(`Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`)
+				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
+				console.log(message)
+				setStatusMessage(message)
+				addMessage(message)
 				addMessage("")
 			}
 
@@ -228,34 +233,56 @@ function App() {
 	// Start training when the page loads.
 	// FIXME Resolve dependency warning or remove this when we're done debugging.
 	React.useEffect(() => {
-		startTraining()
+		// startTraining()
 	}, [])
 
 	return (<Container className="App">
 		<h3>ONNX Runtime Web Training Demo</h3>
 		<div className="section">
-			<TextField type="number"
-				label="Initial Learning Rate"
-				value={initialLearningRate}
-				onChange={(e) => setInitialLearningRate(Number(e.target.value))}
-			/>
-		</div>
-		<div className="section">
 			<p>
 				After each epoch, the learning rate will be multiplied by <code>gamma</code>.
 			</p>
-			<TextField type="number"
-				label="Gamma"
-				value={gamma}
-				onChange={(e) => setGamma(Number(e.target.value))}
-			/>
+			<Grid container spacing={{ xs: 1, md: 2 }}>
+				<Grid item xs={12} md={4} >
+					<TextField label="Initial Learning Rate"
+						type="number"
+						value={initialLearningRate}
+						onChange={(e) => setInitialLearningRate(Number(e.target.value))}
+					/>
+				</Grid>
+				<Grid item xs={12} md={4}>
+					<TextField label="Gamma"
+						type="number"
+						value={gamma}
+						onChange={(e) => setGamma(Number(e.target.value))}
+					/>
+				</Grid>
+			</Grid>
 		</div>
 		<div className="section">
-			<TextField type="number"
-				label="Number of epochs"
+			<TextField label="Number of epochs"
+				type="number"
 				value={numEpochs}
 				onChange={(e) => setNumEpochs(Number(e.target.value))}
 			/>
+		</div>
+		<div className="section">
+			<Grid container spacing={{ xs: 1, md: 2 }}>
+				<Grid item xs={12} md={4} >
+					<TextField type="number"
+						label="Max number of training samples"
+						value={maxNumTrainSamples}
+						onChange={(e) => setMaxNumTrainSamples(Number(e.target.value))}
+					/>
+				</Grid>
+				<Grid item xs={12} md={4}>
+					<TextField type="number"
+						label="Max number of test samples"
+						value={maxNumTestSamples}
+						onChange={(e) => setMaxNumTestSamples(Number(e.target.value))}
+					/>
+				</Grid>
+			</Grid>
 		</div>
 		<div className="section">
 			<Button onClick={startTraining}
