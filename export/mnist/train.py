@@ -1,9 +1,9 @@
 import itertools
 import math
+
 import torch
 import torch.nn.functional as F
-import torch.optim as optim
-from torch.optim.lr_scheduler import ExponentialLR
+import torch.optim
 from torchvision import datasets, transforms
 
 from .model import MnistNet, loss_fn
@@ -110,7 +110,7 @@ def start_training():
     model = MnistNet(data_mean=data_mean, data_std=data_std).to(device)
 
     # Define the optimizer to user for gradient descent
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     for epoch in range(1, n_epochs + 1):
         train(model, device, train_loader, optimizer,
