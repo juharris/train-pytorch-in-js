@@ -25,7 +25,7 @@ export function Digit(props: Props) {
 				}
 			}
 		}
-	}, [])
+	}, [pixels])
 
 	return (<>
 		<canvas
@@ -34,10 +34,12 @@ export function Digit(props: Props) {
 			height={sizeScale * pixels[0].length}>
 		</canvas>
 		<div>
-			{prediction !== undefined &&
+			{prediction !== undefined ?
 				(prediction === label ?
 					`✅ ${prediction}`
-					: `❌ ${prediction} (${label})`)}
+					: `❌ ${prediction} (Expected ${label})`)
+				: `Expecting ${label}`
+			}
 		</div>
 	</>);
 }

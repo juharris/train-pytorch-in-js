@@ -7,15 +7,16 @@
  * Dataset description at https://deepai.org/dataset/mnist.
  */
 export class MnistData {
+	static BATCH_SIZE = 64
 	static MAX_NUM_TRAIN_SAMPLES = 60000
 	static MAX_NUM_TEST_SAMPLES = 10000
 
-	pixelMax = 255
-	pixelMean = 0.1307
-	pixelStd = 0.3081
+	static pixelMax = 255
+	static pixelMean = 0.1307
+	static pixelStd = 0.3081
 
 	constructor(
-		public batchSize = 64,
+		public batchSize = MnistData.BATCH_SIZE,
 		public maxNumTrainSamples = MnistData.MAX_NUM_TRAIN_SAMPLES,
 		public maxNumTestSamples = MnistData.MAX_NUM_TEST_SAMPLES,
 	) {
@@ -89,16 +90,16 @@ export class MnistData {
 			let batch
 			switch (dataType) {
 				case 'data':
-					const image = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
-					batch = (new Float32Array(image))
+					const images = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
+					batch = (new Float32Array(images))
 					if (normalize) {
-						batch = batch.map(v => this.normalize(v))
+						batch = batch.map(v => MnistData.normalize(v))
 					}
 					batch = new ort.Tensor('float32', batch, batchShape)
 					break
 				case 'labels':
-					const label = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
-					batch = Array.from(label).map(BigInt)
+					const labels = new Uint8Array(buffer.slice(offset, offset + this.batchSize * dataSize))
+					batch = Array.from(labels).map(BigInt)
 					batch = new ort.Tensor('int64', new BigInt64Array(batch), batchShape)
 					break
 			}
@@ -110,7 +111,7 @@ export class MnistData {
 		return result
 	}
 
-	private normalize(pixelValue: number): number {
+	public static normalize(pixelValue: number): number {
 		return ((pixelValue / this.pixelMax) - this.pixelMean) / this.pixelStd
 	}
 }

@@ -3,16 +3,19 @@ import React from 'react'
 import './App.css'
 import { Digit } from './components/Digit'
 import { MnistData } from './mnist'
-import { getNumCorrect, randomTensor, size } from './tensor-utils'
+import { getNumCorrect, getPredictions, randomTensor, size } from './tensor-utils'
 
 function App() {
+	const numRows = 28
+	const numCols = 28
+
 	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(3e-4)
 	const [gamma, setGamma] = React.useState<number>(1.0)
 	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(10000)
 	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(1000)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 
-	const [digits, setDigits] = React.useState<{ pixels: number[][], label: number }[]>([])
+	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
 	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
 
 	const [statusMessage, setStatusMessage] = React.useState("")
@@ -115,6 +118,43 @@ function App() {
 		return output
 	}
 
+	function getPixels(data: Float32Array, numRows: number, numCols: number) {
+		const result: number[][] = []
+		for (let row = 0; row < numRows; ++row) {
+			const rowPixels: number[] = []
+			for (let col = 0; col < numCols; ++col) {
+				rowPixels.push(data[row * numCols + col])
+			}
+			result.push(rowPixels)
+		}
+		return result
+	}
+
+	async function updateDigitPredictions(session: ort.InferenceSession, weights: any) {
+		// Build a batch.
+		const input = new Float32Array(digits.length * numRows * numCols)
+		const batchShape = [digits.length, 1, numRows, numCols]
+		const labels = []
+		for (let i = 0; i < digits.length; ++i) {
+			const pixels = digits[i].pixels
+			for (let j = 0; j < pixels.length; ++j) {
+				input[i * pixels.length + j] = MnistData.normalize(pixels[j])
+			}
+
+			// We don't really need to give the real labels since we just need the output.
+			labels.push(BigInt(digits[i].label))
+		}
+
+		const feeds = {
+			input: new ort.Tensor('float32', input, batchShape),
+			labels: new ort.Tensor('int64', new BigInt64Array(labels)),
+			...weights,
+		}
+		const runModelResults = await runModel(session, feeds)
+		const predictions = getPredictions(runModelResults['output'])
+		setDigitPredictions(predictions.slice(0, digits.length))
+	}
+
 	async function train() {
 		const logIntervalMs = 5 * 1000
 		const dataSet = new MnistData()
@@ -128,7 +168,7 @@ function App() {
 
 		// TODO Try to determine these dynamically.
 		// There doesn't seem to be a way from the model to get this information.
-		const inputSize = 28 * 28
+		const inputSize = numRows * numCols
 		const hiddenSize = 128
 		const numClasses = 10
 
@@ -139,7 +179,6 @@ function App() {
 			'fc2.weight': randomTensor([numClasses, hiddenSize], -Math.sqrt(1 / hiddenSize), Math.sqrt(1 / hiddenSize)),
 			'fc2.bias': randomTensor([numClasses], -Math.sqrt(1 / hiddenSize), Math.sqrt(1 / hiddenSize)),
 		}
-		console.debug("weights", weights)
 
 		const optimizerSession = await getSession(optimizerUrl)
 
@@ -154,6 +193,8 @@ function App() {
 		let learningRate = initialLearningRate
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
+				updateDigitPredictions(session, weights)
+
 				let batchNum = 0
 				for await (const batch of dataSet.trainingBatches()) {
 					++batchNum
@@ -174,6 +215,7 @@ function App() {
 					console.debug(message)
 					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
+						updateDigitPredictions(session, weights)
 						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
@@ -236,8 +278,9 @@ function App() {
 			<Grid container spacing={2}>
 				{digits.map((digit, digitIndex) => {
 					const { pixels, label } = digit
+					const rgdPixels = getPixels(pixels, numRows, numCols)
 					return (<Grid key={digitIndex} item xs={6} sm={3} md={2}>
-						<Digit pixels={pixels} label={label} prediction={digitPredictions[digitIndex]} />
+						<Digit pixels={rgdPixels} label={label} prediction={digitPredictions[digitIndex]} />
 					</Grid>)
 				})}
 			</Grid>
@@ -245,13 +288,14 @@ function App() {
 	}
 
 	function startTraining() {
+		setDigitPredictions([])
 		setMessages([])
 		setErrorMessage("")
 		train()
 	}
 
 	async function loadDigits() {
-		const maxNumDigits = 10
+		const maxNumDigits = Math.min(12, MnistData.BATCH_SIZE)
 		const seenLabels = new Set()
 		const dataSet = new MnistData()
 		dataSet.maxNumTestSamples = dataSet.batchSize
@@ -262,20 +306,12 @@ function App() {
 			const numRows = data.dims[2]
 			const numCols = data.dims[3]
 			for (let i = 0; digits.length < maxNumDigits && i < labels.dims[0]; ++i) {
-				const pixels: number[][] = []
 				const label = Number(labels.data[i])
-				if (seenLabels.has(label)) {
+				if (seenLabels.size < 10 && seenLabels.has(label)) {
 					continue
 				}
 				seenLabels.add(label)
-
-				for (let row = 0; row < numRows; ++row) {
-					const rowPixels: number[] = []
-					for (let col = 0; col < numCols; ++col) {
-						rowPixels.push((data.data as Float32Array)[i * numRows * numCols + row * numCols + col])
-					}
-					pixels.push(rowPixels)
-				}
+				const pixels = data.data.slice(i * numRows * numCols, (i + 1) * numRows * numCols) as Float32Array
 
 				digits.push({ pixels, label })
 			}
@@ -363,4 +399,4 @@ function App() {
 	</Container>)
 }
 
-export default App;
+export default App
