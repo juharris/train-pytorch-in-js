@@ -5,11 +5,12 @@ const sizeScale = 2
 export interface Props {
 	pixels: number[][]
 	label: number
+	prediction: number
 }
 
 export function Digit(props: Props) {
 	const canvasRef = React.useRef<HTMLCanvasElement>(null)
-	const { pixels, label } = props
+	const { pixels, label, prediction } = props
 
 	React.useEffect(() => {
 		const canvas = canvasRef.current
@@ -27,7 +28,16 @@ export function Digit(props: Props) {
 	}, [])
 
 	return (<>
-		<canvas ref={canvasRef} width={sizeScale * pixels.length} height={sizeScale * pixels[0].length}></canvas>
-		{/* {label} */}
+		<canvas
+			ref={canvasRef}
+			width={sizeScale * pixels.length}
+			height={sizeScale * pixels[0].length}>
+		</canvas>
+		<div>
+			{prediction !== undefined &&
+				(prediction === label ?
+					`✅ ${prediction}`
+					: `❌ ${prediction} (${label})`)}
+		</div>
 	</>);
 }

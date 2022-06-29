@@ -13,6 +13,7 @@ function App() {
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 
 	const [digits, setDigits] = React.useState<{ pixels: number[][], label: number }[]>([])
+	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
 
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -233,11 +234,10 @@ function App() {
 		return (<div className="section">
 			<h4>Test Digits</h4>
 			<Grid container spacing={2}>
-				{digits.map((digit, i) => {
+				{digits.map((digit, digitIndex) => {
 					const { pixels, label } = digit
-					return (<Grid key={i} item xs={12} md={6}>
-						<Digit pixels={pixels} label={label} />
-						{/* TODO Show prediction. */}
+					return (<Grid key={digitIndex} item xs={6} sm={3} md={2}>
+						<Digit pixels={pixels} label={label} prediction={digitPredictions[digitIndex]} />
 					</Grid>)
 				})}
 			</Grid>
@@ -283,10 +283,7 @@ function App() {
 		setDigits(digits)
 	}
 
-	// Start training when the page loads.
-	// FIXME Resolve dependency warning or remove this when we're done debugging.
 	React.useEffect(() => {
-		// Load digits to display.
 		loadDigits()
 	}, [])
 
@@ -345,8 +342,9 @@ function App() {
 			</Button>
 		</div>
 		{/* TODO Add a button to stop training. */}
-		{/* TODO Show some digits and the predicted classes for after every few batches. */}
+
 		{renderDigits()}
+
 		<pre>{statusMessage}</pre>
 		{messages.length > 0 &&
 			<div>
