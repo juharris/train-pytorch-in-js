@@ -11,8 +11,8 @@ function App() {
 
 	const [initialLearningRate, setInitialLearningRate] = React.useState<number>(3e-4)
 	const [gamma, setGamma] = React.useState<number>(1.0)
-	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(10000)
-	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(1000)
+	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(MnistData.BATCH_SIZE * 100)
+	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(MnistData.BATCH_SIZE * 20)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
