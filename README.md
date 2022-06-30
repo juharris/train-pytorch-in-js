@@ -201,10 +201,9 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    cp *_graph.onnx training/public
    ```
 
-   <!-- TODO Add better instructions to get the MNIST data. -->
+   Copy the MNIST data:
    ```bash
    cd export
-   python -m mnist.train
    cp -R ../data training/public/
    ```
    2. Go to the `training` folder:\
