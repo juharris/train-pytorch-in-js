@@ -218,6 +218,7 @@ function App() {
 					console.debug(message)
 					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
+						setStatusMessage(message)
 						updateDigitPredictions(session, weights)
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
@@ -304,17 +305,18 @@ function App() {
 	}
 
 	async function loadDigits() {
-		const maxNumDigits = Math.min(12, MnistData.BATCH_SIZE)
+		const maxNumDigits = Math.min(18, MnistData.BATCH_SIZE)
 		const seenLabels = new Set()
 		const dataSet = new MnistData()
-		dataSet.maxNumTestSamples = dataSet.batchSize
+		dataSet.maxNumTestSamples = 2 * dataSet.batchSize
 		const digits = []
 		const normalize = false
 		for await (const testBatch of dataSet.testBatches(normalize)) {
 			const { data, labels } = testBatch
+			const batchSize = labels.dims[0]
 			const numRows = data.dims[2]
 			const numCols = data.dims[3]
-			for (let i = 0; digits.length < maxNumDigits && i < labels.dims[0]; ++i) {
+			for (let i = 0; digits.length < maxNumDigits && i < batchSize; ++i) {
 				const label = Number(labels.data[i])
 				if (seenLabels.size < 10 && seenLabels.has(label)) {
 					continue
@@ -323,6 +325,10 @@ function App() {
 				const pixels = data.data.slice(i * numRows * numCols, (i + 1) * numRows * numCols) as Float32Array
 
 				digits.push({ pixels, label })
+			}
+
+			if (digits.length >= maxNumDigits) {
+				break
 			}
 		}
 		setDigits(digits)
