@@ -1,5 +1,6 @@
 import itertools
 import math
+import os
 
 import torch
 import torch.nn.functional as F
@@ -98,10 +99,10 @@ def start_training():
         transforms.Normalize((data_mean,), (data_std,))
     ])
 
-    # Get the MNIST data from torchvision
-    training_data = datasets.MNIST('../data', train=True, download=True,
+    data_path =  os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data'))
+    training_data = datasets.MNIST(data_path, train=True, download=True,
                               transform=transform)
-    test_data = datasets.MNIST('../data', train=False,
+    test_data = datasets.MNIST(data_path, train=False,
                               transform=transform)
 
     # Define the data loaders that will handle fetching of data

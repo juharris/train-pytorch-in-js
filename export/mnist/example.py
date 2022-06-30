@@ -1,11 +1,17 @@
+import os
+
 import onnx
 import torch
 from onnxruntime.training.experimental import export_gradient_graph
 from optim.adam import AdamOnnxGraphBuilder
+from torchvision import datasets
 
 from .model import NUM_CLASSES, MnistNet, loss_fn
 
-# Batch sizes for training and testing
+data_path =  os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data'))
+datasets.MNIST(data_path, download=True)
+
+# Batch size for training and testing.
 batch_size = 64
 
 input_size = (28, 28)

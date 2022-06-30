@@ -1,4 +1,4 @@
-# Train PyTorch Models in JavaScript
+# Train PyTorch Models in JavaScript/TypeScript
 Convert a [PyTorch](https://https://pytorch.org) model and train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
 
 # Overview
@@ -7,7 +7,7 @@ Steps:
 0. Define your PyTorch model. You probably already did this.
 1. Use the new utility method to export an ONNX gradient graph for the model.
 2. Set up an optimizer graph.
-3. Load the graphs in JavaScript.
+3. Load the graphs in JavaScript (this project uses TypeScript).
 4. Use the graphs to train the model.
 
 Here's how it looks in the browser:
@@ -46,17 +46,6 @@ You can train it in Python to get some good initial weights but that's not requi
 We're going to create an ONNX graph that can compute gradients when given training data.
 
 You can follow along here or see the full example in [example.py](./export/example.py) or [mnist/example.py](./export/mnist/example.py).
-
-# MNIST Examples
-To export the MNIST example:
-```bash
-python -m mnist.example
-```
-
-To train the MNIST example to help verify the model:
-```bash
-python -m mnist.train
-```
 
 ### 1. Install some dependencies
 *I did this in Windows Subsystem for Linux (WSL).*
@@ -133,6 +122,26 @@ onnx_optimizer = optimizer.export()
 onnx.save(onnx_optimizer, 'optimizer_graph.onnx')
 ```
 
+### 4. MNIST Example
+Those were just examples that you could follow in your own project.
+This browser example project will load a model that classifies digits from the [MNIST dataset][mnist].
+
+To prepare the model's gradient graph and optimizer graph:
+Go to the export folder:
+```bash
+cd export
+```
+
+To export the MNIST example:
+```bash
+python -m mnist.example
+```
+
+(Optional) Train the model in Python to verify that it should work:
+```bash
+python -m mnist.train
+```
+
 ## 2. Load the model in JavaScript
 We'll use [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web) to load the gradient graph.
 
@@ -203,3 +212,5 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    3. Run `yarn install`
    4. Run `yarn start`\
    Your browser should open and you should see that the gradient graph gets loaded and training starts.
+
+[mnist]: https://deepai.org/dataset/mnist
