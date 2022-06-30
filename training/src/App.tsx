@@ -156,7 +156,7 @@ function App() {
 	}
 
 	async function train() {
-		const logIntervalMs = 5 * 1000
+		const logIntervalMs = 6 * 1000
 		const dataSet = new MnistData()
 		dataSet.maxNumTrainSamples = maxNumTrainSamples
 		dataSet.maxNumTestSamples = maxNumTestSamples
@@ -218,9 +218,9 @@ function App() {
 					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						updateDigitPredictions(session, weights)
-						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
+						lastLogTime = Date.now()
 					}
 					prevOptimizerOutput = await runOptimizer(optimizerSession, runModelResults, weights, prevOptimizerOutput, learningRate)
 				}
@@ -256,9 +256,9 @@ function App() {
 					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
 						setStatusMessage(message)
-						lastLogTime = Date.now()
 						// Wait to give the UI a chance to update and respond to inputs.
 						await new Promise(resolve => setTimeout(resolve, waitAfterLoggingMs))
+						lastLogTime = Date.now()
 					}
 				}
 				lastTestAccuracy = numCorrect / total
