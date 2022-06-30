@@ -28,7 +28,6 @@ class MyModel(torch.nn.Module):
                  hidden_size: int,
                  num_classes: int):
         super(MyModel, self).__init__()
-
         self.fc1 = torch.nn.Linear(input_size, hidden_size)
         self.relu = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
@@ -110,10 +109,11 @@ If you want to validate it, see [orttraining_test_experimental_gradient_graph.py
 We'll run another ONNX graph to compute the weight updates.
 This repo has an example for an [Adam](https://arxiv.org/abs/1412.6980) optimizer [here](./export/optim/adam.py).
 
-The optimizer is kept separate for a few reasons:
-* You can easily swap it for a different optimizer.
+The optimizer graph is kept separate from the gradient graph for a few reasons:
+* You can easily swap the optimizer for a different optimizer while using the same gradient graph.
 * Historically, putting the model's gradient graph and the optimizer graph together was too complex to support many different types of optimizers.
 
+Export the optimizer graph:
 ```python
 from optim.adam import AdamOnnxGraphBuilder
 
@@ -126,7 +126,7 @@ onnx.save(onnx_optimizer, 'optimizer_graph.onnx')
 Those were just examples that you could follow in your own project.
 This browser example project will load a model that classifies digits from the [MNIST dataset][mnist].
 
-To prepare the model's gradient graph and optimizer graph:
+Next, we'll prepare the model's gradient graph and optimizer graph for the example JavaScript project.
 Go to the export folder:
 ```bash
 cd export
@@ -210,6 +210,7 @@ You might get some errors but if you see ort.js and ort-web.js in the dist/ fold
    `cd training`
    3. Run `yarn install`
    4. Run `yarn start`\
-   Your browser should open and you should see that the gradient graph gets loaded and training starts.
+   Your browser should open.
+   Click "TRAIN" to train the model.
 
 [mnist]: https://deepai.org/dataset/mnist

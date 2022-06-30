@@ -14,11 +14,11 @@ export function randomTensor(shape: number[], minimum: number, maximum: number):
 	return new ort.Tensor('float32', randomArray(shape, minimum, maximum), shape)
 }
 
-export function getPredictions(outputLogits: ort.Tensor): number[] {
+export function getPredictions(output: ort.Tensor): number[] {
 	const result = []
-	const [batchSize, numClasses] = outputLogits.dims
+	const [batchSize, numClasses] = output.dims
 	for (let i = 0; i < batchSize; ++i) {
-		const values = outputLogits.data.slice(i * numClasses, (i + 1) * numClasses) as Float32Array
+		const values = output.data.slice(i * numClasses, (i + 1) * numClasses) as Float32Array
 		const outputLabel = argMax(values)
 		result.push(outputLabel)
 	}
@@ -26,13 +26,13 @@ export function getPredictions(outputLogits: ort.Tensor): number[] {
 }
 
 /**
- * @param outputLogits batchSize x numClasses
- * @param labels batchSize
+ * @param output The output predictions from the model. (batchSize x numClasses).
+ * @param labels The correct labels (batchSize).
  * @returns The number of correct predictions.
  */
-export function getNumCorrect(outputLogits: ort.Tensor, labels: ort.Tensor): number {
+export function getNumCorrect(output: ort.Tensor, labels: ort.Tensor): number {
 	let result = 0
-	const predictions = getPredictions(outputLogits)
+	const predictions = getPredictions(output)
 	for (let i = 0; i < predictions.length; ++i) {
 		if (BigInt(predictions[i]) === labels.data[i]) {
 			++result

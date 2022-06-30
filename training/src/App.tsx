@@ -383,7 +383,7 @@ function App() {
 		<div className="section">
 			<Button onClick={startTraining}
 				variant="contained">
-				Start training
+				Train
 			</Button>
 		</div>
 		{/* TODO Add a button to stop training. How would it work? */}
