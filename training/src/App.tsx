@@ -4,6 +4,7 @@ import './App.css'
 import { Digit } from './components/Digit'
 import { MnistData } from './mnist'
 import { getNumCorrect, getPredictions, randomTensor, size } from './tensor-utils'
+import Plot from 'react-plotly.js'
 
 function App() {
 	const numRows = 28
@@ -17,6 +18,10 @@ function App() {
 
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
 	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
+
+
+	const [trainingLosses, setTrainingLosses] = React.useState<number[]>([])
+	const [testAccuracies, setTestAccuracies] = React.useState<number[]>([])
 
 	const [statusMessage, setStatusMessage] = React.useState("")
 	const [errorMessage, setErrorMessage] = React.useState("")
@@ -214,6 +219,7 @@ function App() {
 						console.warn("runModelResults:", runModelResults)
 						throw new Error(`Training | Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
 					}
+					setTrainingLosses(losses => losses.concat(loss))
 					const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
 					console.debug(message)
 					addMessage(message)
@@ -264,6 +270,9 @@ function App() {
 					}
 				}
 				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
+				if (total) {
+					setTestAccuracies(accuracies => accuracies.concat(numCorrect / total))
+				}
 				console.log(message)
 				setStatusMessage(message)
 				addMessage(message)
@@ -279,6 +288,42 @@ function App() {
 			showErrorMessage(`Error while training: ${err}`)
 			console.error(err)
 		}
+	}
+
+	function renderPlots() {
+		const margin = { t: 20, r: 25, b: 25, l: 40 }
+		return (<div className="section">
+			<h3>Plots</h3>
+			<Grid container spacing={2}>
+				<Grid item xs={12} md={6}>
+					<h4>Training Loss</h4>
+					<Plot
+						data={[
+							{
+								x: trainingLosses.map((_, i) => i),
+								y: trainingLosses,
+								type: 'scatter',
+								mode: 'lines',
+							}
+						]}
+						layout={{ margin, width: 400, height: 320 }}
+					/>
+				</Grid><Grid item xs={12} md={6}>
+					<h4>Test Accuracy (%)</h4>
+					<Plot
+						data={[
+							{
+								x: testAccuracies.map((_, i) => i),
+								y: testAccuracies.map(a => 100 * a),
+								type: 'scatter',
+								mode: 'lines+markers',
+							}
+						]}
+						layout={{ margin, width: 400, height: 320 }}
+					/>
+				</Grid>
+			</Grid>
+		</div>)
 	}
 
 	function renderDigits() {
@@ -339,7 +384,7 @@ function App() {
 	}, [])
 
 	return (<Container className="App">
-		<h3>ONNX Runtime Web Training Demo</h3>
+		<h2>ONNX Runtime Web Training Demo</h2>
 		<div className="section">
 			<p>
 				After each epoch, the learning rate will be multiplied by <code>Gamma</code>.
@@ -394,12 +439,14 @@ function App() {
 		</div>
 		{/* TODO Add a button to stop training. How would it work? */}
 
+		{renderPlots()}
+
 		{renderDigits()}
 
 		<pre>{statusMessage}</pre>
 		{messages.length > 0 &&
 			<div>
-				<h4>Logs:</h4>
+				<h3>Logs:</h3>
 				<pre>
 					{messages.map((m, i) => (<React.Fragment key={i}>
 						{m}
