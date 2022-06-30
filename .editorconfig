@@ -1,0 +1,4 @@
+[*.md]
+end_of_line = lf
+indent_size = 4
+trim_trailing_whitespace = false

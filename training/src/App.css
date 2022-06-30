@@ -1,25 +1,16 @@
 .App {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: #282c34;
-  color: #ddd;
-  font-size: calc(10px + 2vmin);
-
-  padding-left: 5%;
-  padding-right: 5%;
-
   word-break: break-all;
 }
 
-.App-link {
-  color: #61dafb;
+div.section {
+  margin-bottom: 1em;
 }
 
 p.error {
   color: red;
 }
 
-div.logs {
-  font-family: 'Courier New', Courier, monospace;
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
