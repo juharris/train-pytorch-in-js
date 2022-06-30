@@ -23,21 +23,21 @@ Here's our simple example:
 import torch
 
 class MyModel(torch.nn.Module):
-	def __init__(self,
-				 input_size: int,
-				 hidden_size: int,
-				 num_classes: int):
-		super(MyModel, self).__init__()
+    def __init__(self,
+                 input_size: int,
+                 hidden_size: int,
+                 num_classes: int):
+        super(MyModel, self).__init__()
 
-		self.fc1 = torch.nn.Linear(input_size, hidden_size)
-		self.relu = torch.nn.ReLU()
-		self.fc2 = torch.nn.Linear(hidden_size, num_classes)
+        self.fc1 = torch.nn.Linear(input_size, hidden_size)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
-	def forward(self, x):
-		out = self.fc1(x)
-		out = self.relu(out)
-		out = self.fc2(out)
-		return out
+    def forward(self, x):
+        out = self.fc1(x)
+        out = self.relu(out)
+        out = self.fc2(out)
+        return out
 ```
 
 You can train it in Python to get some good initial weights but that's not required to export it and then train it in JavaScript.
@@ -78,9 +78,9 @@ from onnxruntime.training.experimental import export_gradient_graph
 
 # We need a custom loss function to load the graph in an InferenceSession in ONNX Runtime Web.
 # You can still make the gradient graph with torch.nn.CrossEntropyLoss() and this part will work but you'll get problem later when trying to use the graph in JavaScript.
-def binary_cross_entropy_loss(inp, target):
-	return -torch.sum(target * torch.log2(inp[:, 0]) +
-		(1-target) * torch.log2(inp[:, 1]))
+def binary_cross_entropy_loss(output, target):
+    return -torch.sum(target * torch.log2(output[:, 0]) +
+        (1-target) * torch.log2(output[:, 1]))
 
 
 loss_fn = binary_cross_entropy_loss
@@ -96,11 +96,11 @@ gradient_graph_path = 'gradient_graph.onnx'
 # It doesn't matter what values are filled in the but the dimensions need to be correct.
 batch_size = 32
 example_input = torch.randn(
-	batch_size, input_size, requires_grad=True)
+    batch_size, input_size, requires_grad=True)
 example_labels = torch.randint(0, num_classes, (batch_size,))
 
 export_gradient_graph(
-	model, loss_fn, example_input, example_labels, gradient_graph_path)
+    model, loss_fn, example_input, example_labels, gradient_graph_path)
 ```
 
 You now have an ONNX graph at `gradient_graph.onnx`.
