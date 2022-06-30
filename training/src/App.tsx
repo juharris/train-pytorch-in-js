@@ -191,7 +191,8 @@ function App() {
 		const waitAfterLoggingMs = 120
 
 		let learningRate = initialLearningRate
-		let lastTestAccuracy = 0
+		let numCorrect = 0
+		let total = 0
 		try {
 			for (let epoch = 1; epoch <= numEpochs; ++epoch) {
 				updateDigitPredictions(session, weights)
@@ -230,8 +231,8 @@ function App() {
 				// Test
 				let totalTestLoss = 0
 				batchNum = 0
-				let numCorrect = 0
-				let total = 0
+				numCorrect = 0
+				total = 0
 				for await (const batch of dataSet.testBatches()) {
 					++batchNum
 					const feeds = {
@@ -261,8 +262,7 @@ function App() {
 						lastLogTime = Date.now()
 					}
 				}
-				lastTestAccuracy = numCorrect / total
-				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (lastTestAccuracy) : 0).toFixed(1)}%)`
+				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
 				console.log(message)
 				setStatusMessage(message)
 				addMessage(message)
@@ -270,8 +270,8 @@ function App() {
 			}
 
 			let message = "Done training"
-			if (lastTestAccuracy) {
-				message += ` | Accuracy: ${(100 * lastTestAccuracy).toFixed(1)}%`
+			if (total) {
+				message += ` | Test Set Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
 			}
 			showStatusMessage(message)
 		} catch (err) {
