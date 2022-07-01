@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/train-pytorch-in-js/static/css/main.1a6c4fb8.css",
-    "main.js": "/train-pytorch-in-js/static/js/main.fe15c1d5.js",
+    "main.js": "/train-pytorch-in-js/static/js/main.d0daa7c9.js",
     "static/js/787.0aa2459c.chunk.js": "/train-pytorch-in-js/static/js/787.0aa2459c.chunk.js",
     "static/media/roboto-all-500-normal.woff": "/train-pytorch-in-js/static/media/roboto-all-500-normal.0ab669b7a0d19b178f57.woff",
     "static/media/roboto-all-700-normal.woff": "/train-pytorch-in-js/static/media/roboto-all-700-normal.a457fde362a540fcadff.woff",
@@ -37,11 +37,11 @@
     "static/media/roboto-greek-ext-700-normal.woff2": "/train-pytorch-in-js/static/media/roboto-greek-ext-700-normal.bd9854c751441ccc1a70.woff2",
     "index.html": "/train-pytorch-in-js/index.html",
     "main.1a6c4fb8.css.map": "/train-pytorch-in-js/static/css/main.1a6c4fb8.css.map",
-    "main.fe15c1d5.js.map": "/train-pytorch-in-js/static/js/main.fe15c1d5.js.map",
+    "main.d0daa7c9.js.map": "/train-pytorch-in-js/static/js/main.d0daa7c9.js.map",
     "787.0aa2459c.chunk.js.map": "/train-pytorch-in-js/static/js/787.0aa2459c.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1a6c4fb8.css",
-    "static/js/main.fe15c1d5.js"
+    "static/js/main.d0daa7c9.js"
   ]
 }

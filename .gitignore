@@ -4,3 +4,5 @@
 /assets/
 /.editorconfig
 /README.md
+
+/data/**/*.gz
