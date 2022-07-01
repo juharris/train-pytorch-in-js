@@ -271,7 +271,8 @@ function App() {
 				}
 				const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Average Test Loss: ${(totalTestLoss / batchNum).toFixed(4)} | Accuracy: ${numCorrect}/${total} (${(total > 0 ? 100 * (numCorrect / total) : 0).toFixed(1)}%)`
 				if (total) {
-					setTestAccuracies(accuracies => accuracies.concat(numCorrect / total))
+					const accuracy = numCorrect / total
+					setTestAccuracies(accuracies => accuracies.concat(accuracy))
 				}
 				console.log(message)
 				setStatusMessage(message)
