@@ -1,0 +1,6 @@
+# Ignore files not for the static site but in the main branch.
+/export/
+/training/
+/assets/
+/.editorconfig
+/README.md
