@@ -14,6 +14,8 @@ function App() {
 	const [gamma, setGamma] = React.useState<number>(1.0)
 	const [maxNumTrainSamples, setMaxNumTrainSamples] = React.useState<number>(MnistData.BATCH_SIZE * 100)
 	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(MnistData.BATCH_SIZE * 20)
+
+	const [batchSize, setBatchSize] = React.useState<number>(MnistData.BATCH_SIZE)
 	const [numEpochs, setNumEpochs] = React.useState<number>(3)
 
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
@@ -162,7 +164,7 @@ function App() {
 
 	async function train() {
 		const logIntervalMs = 6 * 1000
-		const dataSet = new MnistData()
+		const dataSet = new MnistData(batchSize)
 		dataSet.maxNumTrainSamples = maxNumTrainSamples
 		dataSet.maxNumTestSamples = maxNumTestSamples
 
@@ -205,6 +207,7 @@ function App() {
 				// Train
 				let batchNum = 0
 				for await (const batch of dataSet.trainingBatches()) {
+					const batchStartTime = Date.now()
 					++batchNum
 					const feeds = {
 						input: batch.data,
@@ -214,13 +217,13 @@ function App() {
 
 					const runModelResults = await runModel(session, feeds)
 					const loss = runModelResults['loss'].data[0] as number
+					const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)} | ${((Date.now() - batchStartTime) / 1000).toFixed(3)}s`
 					if (isNaN(loss)) {
 						console.warn("feeds", feeds)
 						console.warn("runModelResults:", runModelResults)
-						throw new Error(`Training | Epoch ${epoch} | Batch ${batchNum}/${totalNumBatches} | Loss = ${loss}`)
+						throw new Error(message)
 					}
 					setTrainingLosses(losses => losses.concat(loss))
-					const message = `Epoch: ${String(epoch).padStart(2)}/${numEpochs} | Batch: ${String(batchNum).padStart(3)}/${totalNumBatches} | Loss: ${loss.toFixed(4)}`
 					console.debug(message)
 					addMessage(message)
 					if (Date.now() - lastLogTime > logIntervalMs) {
@@ -351,9 +354,9 @@ function App() {
 	}
 
 	async function loadDigits() {
-		const maxNumDigits = Math.min(18, MnistData.BATCH_SIZE)
+		const maxNumDigits = 18
 		const seenLabels = new Set()
-		const dataSet = new MnistData()
+		const dataSet = new MnistData(batchSize)
 		dataSet.maxNumTestSamples = 2 * dataSet.batchSize
 		const digits = []
 		const normalize = false
@@ -408,11 +411,22 @@ function App() {
 			</Grid>
 		</div>
 		<div className="section">
-			<TextField label="Number of epochs"
-				type="number"
-				value={numEpochs}
-				onChange={(e) => setNumEpochs(Number(e.target.value))}
-			/>
+			<Grid container spacing={{ xs: 1, md: 2 }}>
+				<Grid item xs={12} md={4} >
+					<TextField label="Number of epochs"
+						type="number"
+						value={numEpochs}
+						onChange={(e) => setNumEpochs(Number(e.target.value))}
+					/>
+				</Grid>
+				<Grid item xs={12} md={4}>
+					<TextField label="Batch size"
+						type="number"
+						value={batchSize}
+						onChange={(e) => setBatchSize(Number(e.target.value))}
+					/>
+				</Grid>
+			</Grid>
 		</div>
 		<div className="section">
 			<Grid container spacing={{ xs: 1, md: 2 }}>
