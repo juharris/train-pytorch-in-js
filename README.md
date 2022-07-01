@@ -1,6 +1,11 @@
 # Train PyTorch Models in JavaScript/TypeScript
 Convert a [PyTorch](https://https://pytorch.org) model and train it in JavaScript using [ONNX Runtime Web](https://github.com/microsoft/onnxruntime/tree/master/js/web).
 
+Try it yourself at https://juharris.github.io/train-pytorch-in-js.
+
+Example:
+![example of how training looks in the browser](./assets/training.gif)
+
 # Overview
 Steps:
 
@@ -9,10 +14,6 @@ Steps:
 2. Set up an optimizer graph.
 3. Load the graphs in JavaScript (this project uses TypeScript).
 4. Use the graphs to train the model.
-
-Here's how it looks in the browser:
-
-![example of how training looks in the browser](./assets/training.gif)
 
 Details:
 
