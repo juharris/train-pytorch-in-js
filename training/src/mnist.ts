@@ -44,15 +44,15 @@ export class MnistData {
 
 	public async * trainingBatches() {
 		// Avoid keeping data in memory.
-		const trainingData = await this.getData('/data/MNIST/raw/train-images-idx3-ubyte', 2051, 'data', this.maxNumTrainSamples)
-		const trainingLabels = await this.getData('/data/MNIST/raw/train-labels-idx1-ubyte', 2049, 'labels', this.maxNumTrainSamples)
+		const trainingData = await this.getData('data/MNIST/raw/train-images-idx3-ubyte', 2051, 'data', this.maxNumTrainSamples)
+		const trainingLabels = await this.getData('data/MNIST/raw/train-labels-idx1-ubyte', 2049, 'labels', this.maxNumTrainSamples)
 		yield* this.batches(trainingData, trainingLabels)
 	}
 
 	public async * testBatches(normalize = true) {
 		// Avoid keeping data in memory.
-		const testData = await this.getData('/data/MNIST/raw/t10k-images-idx3-ubyte', 2051, 'data', this.maxNumTestSamples, normalize)
-		const testLabels = await this.getData('/data/MNIST/raw/t10k-labels-idx1-ubyte', 2049, 'labels', this.maxNumTestSamples)
+		const testData = await this.getData('data/MNIST/raw/t10k-images-idx3-ubyte', 2051, 'data', this.maxNumTestSamples, normalize)
+		const testLabels = await this.getData('data/MNIST/raw/t10k-labels-idx1-ubyte', 2049, 'labels', this.maxNumTestSamples)
 		yield* this.batches(testData, testLabels)
 	}
 

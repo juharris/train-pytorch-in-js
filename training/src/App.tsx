@@ -167,8 +167,8 @@ function App() {
 		dataSet.maxNumTestSamples = maxNumTestSamples
 
 		const modelPrefix = 'mnist_'
-		const modelUrl = `/${modelPrefix}gradient_graph.onnx`
-		const optimizerUrl = `/${modelPrefix}optimizer_graph.onnx`
+		const modelUrl = `${modelPrefix}gradient_graph.onnx`
+		const optimizerUrl = `${modelPrefix}optimizer_graph.onnx`
 		const session = await getSession(modelUrl)
 
 		// TODO Try to determine these dynamically.
