@@ -1,10 +1,10 @@
-import { Button, Container, Grid, TextField } from '@mui/material'
+import { Button, Container, Grid, Link, TextField } from '@mui/material'
 import React from 'react'
+import Plot from 'react-plotly.js'
 import './App.css'
 import { Digit } from './components/Digit'
 import { MnistData } from './mnist'
 import { getNumCorrect, getPredictions, randomTensor, size } from './tensor-utils'
-import Plot from 'react-plotly.js'
 
 function App() {
 	const numRows = 28
@@ -16,7 +16,7 @@ function App() {
 	const [maxNumTestSamples, setMaxNumTestSamples] = React.useState<number>(MnistData.BATCH_SIZE * 20)
 
 	const [batchSize, setBatchSize] = React.useState<number>(MnistData.BATCH_SIZE)
-	const [numEpochs, setNumEpochs] = React.useState<number>(3)
+	const [numEpochs, setNumEpochs] = React.useState<number>(5)
 
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
 	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
@@ -353,10 +353,10 @@ function App() {
 		train()
 	}
 
-	async function loadDigits() {
+	const loadDigits = React.useCallback(async () => {
 		const maxNumDigits = 18
 		const seenLabels = new Set()
-		const dataSet = new MnistData(batchSize)
+		const dataSet = new MnistData()
 		dataSet.maxNumTestSamples = 2 * dataSet.batchSize
 		const digits = []
 		const normalize = false
@@ -381,15 +381,24 @@ function App() {
 			}
 		}
 		setDigits(digits)
-	}
+	}, [])
 
 	React.useEffect(() => {
 		loadDigits()
-	}, [])
+	}, [loadDigits])
 
 	return (<Container className="App">
-		<h2>ONNX Runtime Web Training Demo</h2>
 		<div className="section">
+			<h2>ONNX Runtime Web Training Demo</h2>
+			<p>
+				In this example, you'll a train classifier in your browser to recognize handwritten digits from the <Link href="https://deepai.org/dataset/mnist" target="_blank" rel="noopener">MNIST Dataset</Link>.
+			</p>
+			<p>
+				You can learn more about how to set up a model that can be trained in your browser at <Link href="https://github.com/juharris/train-pytorch-in-js" target="_blank" rel="noopener">github.com/juharris/train-pytorch-in-js</Link>.
+			</p>
+		</div>
+		<div className="section">
+			<h3>Training</h3>
 			<p>
 				After each epoch, the learning rate will be multiplied by <code>Gamma</code>.
 			</p>
