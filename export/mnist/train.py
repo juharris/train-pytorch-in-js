@@ -1,6 +1,7 @@
 import itertools
 import math
 import os
+import time
 
 import torch
 import torch.nn.functional as F
@@ -20,6 +21,7 @@ def train(model, device, train_loader, optimizer, epoch, log_interval, train_set
         train_set_limit = len(train_loader)
     else:
         train_loader = itertools.islice(train_loader, train_set_limit)
+    start_time = time.time()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
@@ -29,6 +31,7 @@ def train(model, device, train_loader, optimizer, epoch, log_interval, train_set
         optimizer.step()
         if batch_idx % log_interval == 0:
             print(f"Train Epoch: {epoch} [Batch {batch_idx}/{train_set_limit} ({ 100. * batch_idx / train_set_limit:.0f}%)]\tLoss: { loss.item():.6f}")
+    print(f"Average time per batch {1000 * (time.time() - start_time) / train_set_limit:.2f}ms")
 
 
 def test(model, device, test_loader):
