@@ -21,7 +21,6 @@ function App() {
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
 	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
 
-
 	const [trainingLosses, setTrainingLosses] = React.useState<number[]>([])
 	const [testAccuracies, setTestAccuracies] = React.useState<number[]>([])
 

@@ -42,7 +42,6 @@ export function getNumCorrect(output: ort.Tensor, labels: ort.Tensor): number {
 	return result
 }
 
-
 export function argMax(tensor: Float32Array): number {
 	let result = 0
 	for (let i = 1; i < tensor.length; ++i) {
