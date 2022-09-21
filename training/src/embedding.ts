@@ -2,7 +2,6 @@ import { flatten } from './tensor-utils'
 
 export default class Embedding {
 	constructor(private readonly vocab: { [token: string]: number }, private readonly oov: number, private readonly emb: ort.InferenceSession) {
-
 	}
 
 	public getTokenId(token: string): number {
@@ -19,7 +18,6 @@ export default class Embedding {
 			if (maxNumTokens === undefined) {
 				throw new Error('`maxNumTokens` must be defined.')
 			}
-			// TODO Handle texts: string[][] for history titles for News Rec.
 			const tokenIds = texts.map(texts => this.getTokenIds(texts as string[], maxNumTokens))
 			const batchSize = tokenIds.length
 			feeds = {
