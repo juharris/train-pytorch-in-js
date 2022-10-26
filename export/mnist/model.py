@@ -76,8 +76,8 @@ class MnistNet(nn.Module):
 
         # Can't use the -max trick for stability because we get an error when exporting the gradient graph.
         # RuntimeError: /onnxruntime_src/orttraining/orttraining/core/graph/gradient_builder_registry.cc:29 onnxruntime::training::GradientDef onnxruntime::training::GetGradientForOp(const onnxruntime::training::GradientGraphConfiguration&, onnxruntime::Graph*, const onnxruntime::Node*, const std::unordered_set<std::basic_string<char> >&, const std::unordered_set<std::basic_string<char> >&, const onnxruntime::logging::Logger&, std::unordered_set<std::basic_string<char> >&) gradient_builder != nullptr was false. The gradient builder has not been registered: ReduceMax for node ReduceMax_4
-        # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
         # Offset by the max possible value to avoid overflow.
+        # output = torch.exp(x - x.max(dim=dim, keepdim=True)[0])
         output = torch.exp(x - (1 - self.data_mean) / self.data_std)
         output = output / output.sum(dim=dim, keepdim=True)
         return output

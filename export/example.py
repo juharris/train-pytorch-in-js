@@ -17,10 +17,11 @@ class MyModel(torch.nn.Module):
         self.relu = torch.nn.ReLU()
         self.fc2 = torch.nn.Linear(hidden_size, num_classes)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         out = self.fc1(x)
         out = self.relu(out)
         out = self.fc2(out)
+        out = out.sigmoid()
         return out
 
 # We need a custom loss function to load the graph in an InferenceSession in ONNX Runtime Web.

@@ -1,3 +1,10 @@
+export function flatten(arr: any[]): any[] {
+	while (arr.length > 0 && Array.isArray(arr[0])) {
+		arr = [].concat(...arr)
+	}
+	return arr
+}
+
 export function size(shape: readonly number[]): number {
 	return shape.reduce((a, b) => a * b)
 }
@@ -41,7 +48,6 @@ export function getNumCorrect(output: ort.Tensor, labels: ort.Tensor): number {
 
 	return result
 }
-
 
 export function argMax(tensor: Float32Array): number {
 	let result = 0

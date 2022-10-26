@@ -21,7 +21,6 @@ function App() {
 	const [digits, setDigits] = React.useState<{ pixels: Float32Array, label: number }[]>([])
 	const [digitPredictions, setDigitPredictions] = React.useState<number[]>([])
 
-
 	const [trainingLosses, setTrainingLosses] = React.useState<number[]>([])
 	const [testAccuracies, setTestAccuracies] = React.useState<number[]>([])
 
@@ -59,14 +58,14 @@ function App() {
 
 	async function runModel(
 		session: ort.InferenceSession,
-		feeds: any,
+		feeds: ort.InferenceSession.OnnxValueMapType,
 		isLoggingEnabled = false) {
 		const result = await session.run(feeds)
 		if (isLoggingEnabled) {
 			console.debug("results:", result)
 
 			for (const [k, tensor] of Object.entries(result)) {
-				addMessage(`  ${k}: ${(tensor as any).data}`)
+				addMessage(`  ${k}: ${tensor.data}`)
 			}
 		}
 
@@ -81,7 +80,7 @@ function App() {
 	 * @param weights The weights to optimize. The values will be updated.
 	 * @param prevOptimizerOutput 
 	 * @param learningRate 
-	 * @returns 
+	 * @returns The output from the optimizer session.
 	 */
 	async function runOptimizer(
 		optimizerSession: ort.InferenceSession,
@@ -109,8 +108,8 @@ function App() {
 				}
 			} else {
 				optimizerInputs[name + '.step'] = new ort.Tensor('int64', new BigInt64Array([1n]))
-				optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
-				optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size((tensor as any).dims)).fill(0), (tensor as any).dims)
+				optimizerInputs[name + '.exp_avg'] = new ort.Tensor('float32', Array(size(tensor.dims)).fill(0), tensor.dims)
+				optimizerInputs[name + '.exp_avg_sq'] = new ort.Tensor('float32', Array(size(tensor.dims)).fill(0), tensor.dims)
 				// Not used but could be in the future.
 				// optimizerInputs[name + '.mixed_precision'] = new ort.Tensor('float32', [])
 			}

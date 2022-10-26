@@ -7,13 +7,13 @@
  * Dataset description at https://deepai.org/dataset/mnist.
  */
 export class MnistData {
-	static BATCH_SIZE = 64
-	static MAX_NUM_TRAIN_SAMPLES = 60000
-	static MAX_NUM_TEST_SAMPLES = 10000
+	static readonly BATCH_SIZE = 64
+	static readonly MAX_NUM_TRAIN_SAMPLES = 60000
+	static readonly MAX_NUM_TEST_SAMPLES = 10000
 
-	static pixelMax = 255
-	static pixelMean = 0.1307
-	static pixelStd = 0.3081
+	static readonly pixelMax = 255
+	static readonly pixelMean = 0.1307
+	static readonly pixelStd = 0.3081
 
 	constructor(
 		public batchSize = MnistData.BATCH_SIZE,
