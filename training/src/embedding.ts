@@ -1,5 +1,9 @@
 import { flatten } from './tensor-utils'
 
+/**
+ * Computes the embedding of the given input.
+ * A work in progress and not tested or used yet.
+ */
 export default class Embedding {
 	constructor(private readonly vocab: { [token: string]: number }, private readonly oov: number, private readonly emb: ort.InferenceSession) {
 	}
